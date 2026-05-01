@@ -1,16 +1,11 @@
 import React from 'react';
-import { CopyButton } from '@/components/copy-button';
-import { FinalCTA } from '@/components/final-cta';
-import { Paykit as PaykitIcon } from '@/components/icons';
-import { ProviderDemo } from '@/components/provider-demo';
-import { ReactHooksDemo } from '@/components/react-hooks-demo';
+import {
+  Paykit as PaykitIcon,
+  StellarTools as StellarToolsIcon,
+} from '@/components/icons';
 import { SiteHeader } from '@/components/site-header';
-import { SponsorContact } from '@/components/sponsor-contact';
-import PaypalLogo from '@/public/providers/paypal.webp';
-import PolarLogo from '@/public/providers/polar.jpg';
-import StripeLogo from '@/public/providers/stripe.jpeg';
-import { Separator, Button, Badge, cn } from '@paykit-sdk/ui';
-import { BookOpen, Zap, Github } from 'lucide-react';
+import { Separator, Button, Badge, Card } from '@paykit-sdk/ui';
+import { Linkedin, Zap, Github, ArrowRight, Package } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -50,110 +45,108 @@ const Index = () => {
 
       <main className="mx-auto max-w-7xl px-6 pt-12 pb-24">
         {/* Hero Section */}
-        <div className="mb-16 space-y-6 text-center">
+        <div className="mb-20 space-y-6 text-center">
           <div className="bg-muted/50 inline-flex items-center space-x-2 rounded-full border px-4 py-2 text-sm">
             <Zap className="h-4 w-4 text-yellow-500" />
-            <span className="text-muted-foreground">Open Source Payment Toolkit</span>
+            <span className="text-muted-foreground">Payment Infrastructure</span>
             <Badge variant="secondary" className="ml-2">
               TypeScript
             </Badge>
           </div>
 
-          <h1 className="text-4xl font-bold tracking-tight md:text-6xl lg:text-7xl">
-            Build payments
+          <h1 className="text-4xl font-bold tracking-tight md:text-6xl">
+            The missing infrastructure
             <br />
             <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-              without vendor lock-in
+              between payment providers and developers
             </span>
           </h1>
 
-          <div className="flex flex-col items-center">
-            <p className="text-muted-foreground mx-auto max-w-3xl text-xl leading-relaxed md:text-2xl">
-              PayKit lets you build payments with a consistent Typescript API.
-            </p>
-            <p className="text-muted-foreground mx-auto -mt-2 max-w-3xl text-xl leading-relaxed md:text-2xl">
-              Switch providers later by swapping the adapter.
-            </p>
-          </div>
-
-          <div className="flex flex-col items-center justify-center gap-4 pt-4 sm:flex-row">
-            <CopyButton
-              className="min-h-fit max-w-full overflow-hidden px-4 py-3 text-left break-words whitespace-pre-wrap"
-              value="npx shadcn@latest add https://www.usepaykit.dev/r/stripe-nextjs-hooks"
-              variant="outline"
-              size="lg"
-            >
-              npx shadcn@latest add https://usepaykit.dev/r/stripe-nextjs-hooks
-            </CopyButton>
-          </div>
+          <p className="text-muted-foreground mx-auto max-w-3xl text-xl leading-relaxed md:text-2xl">
+            We build tools that make payments simpler, more portable, and more accessible
+            for developers everywhere.
+          </p>
         </div>
 
-        <div className="mx-auto mb-16 text-center">
-          <h2 className="mb-8 text-3xl font-bold">
-            Integrates with your favorite providers
-          </h2>
-          <div className="mx-auto flex w-full max-w-sm items-center justify-center">
-            <div className="flex items-center">
-              {[
-                { logo: StripeLogo, name: 'Stripe' },
-                { logo: PolarLogo, name: 'Polar' },
-                { logo: PaypalLogo, name: 'Paypal' },
-              ].map((provider, index) => (
-                <div
-                  key={provider.name}
-                  className={cn(
-                    `border-background-foreground size-12 overflow-hidden rounded-full border-2`,
-                    index > 0 && '-ml-4',
-                  )}
-                >
-                  <Image
-                    src={provider.logo}
-                    alt={provider.name}
-                    width={50}
-                    height={50}
-                    className="h-full w-full object-cover"
-                  />
+        <section id="products" className="scroll-mt-20">
+          <div className="mb-10 text-center">
+            <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
+              Our products
+            </h2>
+            <p className="text-muted-foreground mt-3 text-lg">
+              Everything we build, in one place.
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card.Root className="border-2 transition-colors hover:border-blue-500/50">
+              <Card.Header>
+                <div className="mb-2 flex items-center gap-2">
+                  <Package className="h-5 w-5 text-blue-500" />
+                  <Card.Title className="text-xl">PayKit SDK</Card.Title>
                 </div>
-              ))}
-            </div>
+                <Card.Description className="text-base leading-relaxed">
+                  Swap payment providers with 2 lines of code. A consistent TypeScript API
+                  across Stripe, PayPal, Polar, and more.
+                </Card.Description>
+              </Card.Header>
+              <Card.Content>
+                <Button asChild variant="outline" size="sm">
+                  <Link href="/sdk">
+                    View SDK
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </Card.Content>
+            </Card.Root>
 
-            {/* Connection line */}
-            <div className="mx-4 flex-1">
-              <div className="bg-primary h-0.5 w-full"></div>
-            </div>
-
-            {/* PayKit core */}
-            <PaykitIcon className="text-foreground size-12" />
+            <Card.Root className="border-2 transition-colors hover:border-purple-500/50">
+              <Card.Header>
+                <div className="mb-2 flex items-center gap-2">
+                  <StellarToolsIcon className="h-5 w-5 text-purple-500" />
+                  <Card.Title className="text-xl">StellarTools</Card.Title>
+                </div>
+                <Card.Description className="text-base leading-relaxed">
+                  Accept Stellar payments at checkout. Built for merchants who want
+                  crypto-native, wallet-connect powered payment flows.
+                </Card.Description>
+              </Card.Header>
+              <Card.Content>
+                <Button asChild variant="outline" size="sm">
+                  <Link
+                    href="https://stellartools.dev"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Visit StellarTools
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </Card.Content>
+            </Card.Root>
           </div>
-        </div>
+        </section>
       </main>
 
-      <ProviderDemo />
-
-      <ReactHooksDemo />
-
-      <SponsorContact />
-
-      <FinalCTA />
-
-      {/* Footer */}
       <footer className="bg-muted/30 border-t">
         <div className="mx-auto max-w-7xl px-6 py-12">
           <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-            {/* Company Info */}
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
                 <PaykitIcon className="size-5 text-blue-500" />
                 <span className="text-lg font-bold">PayKit</span>
               </div>
               <p className="text-muted-foreground text-sm leading-relaxed">
-                The payment toolkit for TypeScript developers. Build locally, deploy
-                anywhere.
+                Payment infrastructure for developers.
               </p>
               <div className="flex items-center space-x-1">
                 <Button asChild variant="ghost" size="sm">
-                  <Link href="/docs/introduction">
-                    <BookOpen className="size-4" />
+                  <Link
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    href="https://www.linkedin.com/company/usepaykit"
+                  >
+                    <Linkedin className="size-4" />
                   </Link>
                 </Button>
 
@@ -199,57 +192,24 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Product */}
+            <div />
+
             <div className="space-y-4">
               <h3 className="font-semibold">Product</h3>
               <ul className="text-muted-foreground space-y-2 text-sm">
                 <li>
-                  <Link href="#" className="hover:text-foreground transition-colors">
-                    Features
+                  <Link href="/sdk" className="hover:text-foreground transition-colors">
+                    PayKit SDK
                   </Link>
                 </li>
                 <li>
                   <Link
-                    href="/docs/providers/overview"
+                    href="https://stellartools.dev"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="hover:text-foreground transition-colors"
                   >
-                    Providers
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/docs/providers/adapters/medusajs"
-                    className="hover:text-foreground transition-colors"
-                  >
-                    Adapters
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            {/* Developers */}
-            <div className="space-y-4">
-              <h3 className="font-semibold">Developers</h3>
-              <ul className="text-muted-foreground space-y-2 text-sm">
-                <li>
-                  <Link href="/docs" className="hover:text-foreground transition-colors">
-                    Documentation
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/docs/api-reference"
-                    className="hover:text-foreground transition-colors"
-                  >
-                    API Reference
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/docs/framework-examples"
-                    className="hover:text-foreground transition-colors"
-                  >
-                    Framework Examples
+                    StellarTools
                   </Link>
                 </li>
               </ul>
@@ -264,8 +224,9 @@ const Index = () => {
                 <Image
                   src="/odii.png"
                   alt="Emmanuel Odii"
-                  fill
-                  className="object-cover"
+                  className="h-full w-full object-cover"
+                  width={32}
+                  height={32}
                 />
               </div>
               <p className="text-muted-foreground text-sm">

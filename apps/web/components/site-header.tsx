@@ -1,18 +1,25 @@
 'use client';
 
 import { Button } from '@paykit-sdk/ui';
-import { BookOpen, Github, History } from 'lucide-react';
+import { BookOpen, Github } from 'lucide-react';
 import Link from 'next/link';
 import { ThemeToggle } from './theme-toggle';
 
-export const SiteHeader = () => {
+interface SiteHeaderProps {
+  showDocs?: boolean;
+}
+
+export const SiteHeader = ({ showDocs = false }: SiteHeaderProps) => {
   return (
     <div className="flex items-center space-x-1">
-      <Button asChild variant="ghost" size="sm">
-        <Link href="/docs">
-          <BookOpen className="size-4" />
-        </Link>
-      </Button>
+      {showDocs && (
+        <Button asChild variant="ghost" size="sm">
+          <Link href="/docs">
+            <BookOpen className="size-4" />
+            <span className="ml-1.5 text-sm">Docs</span>
+          </Link>
+        </Button>
+      )}
 
       <Button asChild variant="ghost" size="sm">
         <Link
@@ -21,12 +28,6 @@ export const SiteHeader = () => {
           rel="noopener noreferrer"
         >
           <Github className="size-4" />
-        </Link>
-      </Button>
-
-      <Button asChild variant="ghost" size="sm">
-        <Link href="/changelog">
-          <History className="size-4" />
         </Link>
       </Button>
 
@@ -64,6 +65,7 @@ export const SiteHeader = () => {
           </svg>
         </Link>
       </Button>
+
       <ThemeToggle />
     </div>
   );
