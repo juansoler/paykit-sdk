@@ -408,9 +408,17 @@ export class ComgateProvider extends AbstractPayKitProvider implements PayKitPro
       amount: data.amount,
       currency: 'CZK',
       reason: data.reason,
-      metadata: Object.fromEntries(
-        Object.entries(data.metadata ?? {}).map(([key, value]) => [key, String(value)]),
-      ),
+      metadata: {
+        ...Object.fromEntries(
+          Object.entries(data.metadata ?? {}).map(([key, value]) => [key, String(value)]),
+        ),
+        ...(response.value?.code
+          ? { __comgate_refund_code: String(response.value.code) }
+          : {}),
+        ...(response.value?.message && {
+          __comgate_refund_message: response.value.message,
+        }),
+      },
     };
 
     return refundObject;
