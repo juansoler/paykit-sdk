@@ -335,9 +335,9 @@ export class GoPayProvider extends AbstractPayKitProvider implements PayKitProvi
     );
 
     if (this.opts.debug) {
-      if (data.billing_interval == 'year') {
+      if (data.billing_interval === 'year') {
         console.info(
-          'GoPay does not support yearly subscriptions, using monthly instead',
+          'GoPay does not support yearly subscriptions, the available options are `day`, `week`, `month` and `ON_DEMAND` \n raise an issue at https://github.com/usepaykit/paykit-sdk/issues if you need this feature',
         );
       }
 
@@ -355,25 +355,35 @@ export class GoPayProvider extends AbstractPayKitProvider implements PayKitProvi
       day: 'DAY',
       week: 'WEEK',
       month: 'MONTH',
-      year: 'MONTH',
+      year: 'ON_DEMAND',
     } as const;
 
+    const recurrenceCycle = intervalMap?.[data.billing_interval] ?? 'ON_DEMAND';
+
     const currentPeriodEnd = (() => {
-      if (data.billing_interval === 'day') {
+      if (recurrenceCycle === 'DAY') {
         return new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString();
       }
 
-      if (data.billing_interval === 'week') {
+      if (recurrenceCycle === 'WEEK') {
         return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
       }
 
-      if (data.billing_interval === 'month') {
+      if (recurrenceCycle === 'MONTH') {
         return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
       }
-      return new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
-    })();
 
-    const recurrenceCycle = intervalMap[data.billing_interval] ?? 'ON_DEMAND';
+      if (recurrenceCycle === 'ON_DEMAND') {
+        throw new ConfigurationError(
+          'ON_DEMAND subscriptions is not yet implemented by PayKit, please open an issue at https://github.com/usepaykit/paykit-sdk/issues',
+          {
+            provider: this.providerName,
+          },
+        );
+      }
+
+      throw new Error('Invalid billing interval: ' + data.billing_interval);
+    })();
 
     const goPaySubscriptionOptions: GoPayPaymentRequest = {
       payer: {
@@ -582,9 +592,7 @@ export class GoPayProvider extends AbstractPayKitProvider implements PayKitProvi
   capturePayment = async (id: string, params: CapturePaymentSchema): Promise<Payment> => {
     const payment = await this._client.get<GoPayPaymentBaseResponse>(
       `/payments/payment/${id}/capture`,
-      {
-        headers: await this.tokenManager.getAuthHeaders(),
-      },
+      { headers: await this.tokenManager.getAuthHeaders() },
     );
 
     if (!payment.ok) {
@@ -625,12 +633,8 @@ export class GoPayProvider extends AbstractPayKitProvider implements PayKitProvi
   cancelPayment = async (id: string): Promise<Payment> => {
     const response = await this._client.post<GoPayPaymentBaseResponse>(
       `/payments/payment/${id}/void-authorization`,
-      {
-        headers: await this.tokenManager.getAuthHeaders(),
-      },
+      { headers: await this.tokenManager.getAuthHeaders() },
     );
-
-    console.dir({ response }, { depth: 100 });
 
     const payment = await this.retrievePayment(id);
 
@@ -709,8 +713,6 @@ export class GoPayProvider extends AbstractPayKitProvider implements PayKitProvi
     const paymentId = new URL(fullUrl).searchParams.get('id');
     const parentId = new URL(fullUrl).searchParams.get('parent_id'); // For recurring payments i.e subscriptions
 
-    console.log({ paymentId, parentId });
-
     if (!paymentId) {
       throw new WebhookError('Payment ID is required', { provider: this.providerName });
     }
@@ -727,8 +729,6 @@ export class GoPayProvider extends AbstractPayKitProvider implements PayKitProvi
         },
       }),
     );
-
-    console.log({ payment });
 
     if (error) {
       throw new WebhookError('Failed to retrieve payment', {
