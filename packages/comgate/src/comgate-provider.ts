@@ -365,7 +365,7 @@ export class ComgateProvider extends AbstractPayKitProvider implements PayKitPro
       customer: '',
       item_id: null,
       requires_action: false,
-      payment_url: '',
+      payment_url: response.value!.redirect ?? null,
     };
 
     return paymentObject;
