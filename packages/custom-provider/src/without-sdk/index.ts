@@ -14,5 +14,5 @@ export const withoutProviderSDK = () => {
 
   const apiKey = envVars.PROVIDER_API_KEY;
 
-  return createWithoutProviderSDK({ apiKey });
+  return createWithoutProviderSDK({ apiKey, isSandbox: false });
 };

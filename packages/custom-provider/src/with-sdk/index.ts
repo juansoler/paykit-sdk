@@ -14,5 +14,5 @@ export const withProviderSDK = () => {
 
   const apiKey = envVars.PROVIDER_API_KEY;
 
-  return createWithProviderSDK({ apiKey });
+  return createWithProviderSDK({ apiKey, isSandbox: false });
 };

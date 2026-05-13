@@ -20,160 +20,124 @@ import {
   schema,
   AbstractPayKitProvider,
   NotImplementedError,
+  ProviderNotSupportedError,
+  CapturePaymentSchema,
 } from '@paykit-sdk/core';
 import { z } from 'zod';
 
-export interface WithProviderSDKOptions
-  extends PaykitProviderOptions<{
-    /**
-     * The API key for the provider
-     */
-    apiKey: string;
-  }> {}
+/**
+ * @description Adjust these keys to match the credentials required by the official SDK.
+ */
+export interface WithProviderSDKOptions extends PaykitProviderOptions {
+  /**
+   * The API key for the provider
+   */
+  apiKey: string;
+}
 
 const withProviderSDKOptionsSchema = schema<WithProviderSDKOptions>()(
   z.object({
-    apiKey: z.string(),
+    apiKey: z.string().min(1),
+    isSandbox: z.boolean(),
   }),
 );
 
-const providerName = 'withSDK';
+const providerName = 'with-sdk';
 
+/**
+ * BLUEPRINT: Integration via External SDK
+ * @description Use this when wrapping an existing official library (e.g., Stripe, Adyen).
+ */
 export class WithProviderSDK extends AbstractPayKitProvider implements PayKitProvider {
   readonly providerName = providerName;
+  // private sdk: SomeProviderSDK;
 
   constructor(private readonly opts: WithProviderSDKOptions) {
     super(withProviderSDKOptionsSchema, opts, providerName);
 
-    // init provider specific sdk with the options
+    /**
+     * @example
+     * this.sdk = new SomeProviderSDK({
+     *   apiKey: opts.apiKey,
+     *   environment: opts.isSandbox ? 'sandbox' : 'live',
+     * });
+     */
   }
 
-  updateCheckout(id: string, params: UpdateCheckoutSchema): Promise<Checkout> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
+  private _ni(m: string): Promise<never> {
+    return Promise.reject(
+      new NotImplementedError(m, this.providerName, { futureSupport: true }),
+    );
+  }
+  private _ns(m: string, r: string): Promise<never> {
+    return Promise.reject(
+      new ProviderNotSupportedError(m, this.providerName, { reason: r }),
+    );
   }
 
-  deleteCheckout(id: string): Promise<null> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
+  /**
+   * @example
+   * try {
+   *   const res = await this.sdk.checkouts.create(params);
+   *   return mapToPaykit(res);
+   * } catch (e) {
+   *   throw new OperationFailedError("SDK Error", this.providerName, { cause: e });
+   * }
+   */
+  createCheckout = (params: CreateCheckoutSchema): Promise<Checkout> =>
+    this._ni('createCheckout');
 
-  deleteCustomer(id: string): Promise<null> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
+  retrieveCheckout = (id: string): Promise<Checkout> => this._ni('retrieveCheckout');
 
-  createSubscription(params: CreateSubscriptionSchema): Promise<Subscription> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
+  updateCheckout = (id: string, params: UpdateCheckoutSchema): Promise<Checkout> =>
+    this._ni('updateCheckout');
 
-  deleteSubscription(id: string): Promise<null> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
+  deleteCheckout = (id: string): Promise<null> => this._ni('deleteCheckout');
 
-  createPayment(params: CreatePaymentSchema): Promise<Payment> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
+  createPayment = (params: CreatePaymentSchema): Promise<Payment> =>
+    this._ni('createPayment');
 
-  updatePayment(id: string, params: UpdatePaymentSchema): Promise<Payment> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
+  retrievePayment = (id: string): Promise<Payment | null> => this._ni('retrievePayment');
 
-  retrievePayment(id: string): Promise<Payment | null> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
+  updatePayment = (id: string, params: UpdatePaymentSchema): Promise<Payment> =>
+    this._ni('updatePayment');
 
-  deletePayment(id: string): Promise<null> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
+  deletePayment = (id: string): Promise<null> => this._ni('deletePayment');
 
-  capturePayment(id: string): Promise<Payment> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
+  capturePayment = (id: string, params: CapturePaymentSchema): Promise<Payment> =>
+    this._ni('capturePayment');
 
-  cancelPayment(id: string): Promise<Payment> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
+  cancelPayment = (id: string): Promise<Payment> => this._ni('cancelPayment');
 
-  createRefund(params: CreateRefundSchema): Promise<Refund> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
+  createCustomer = (params: CreateCustomerParams): Promise<Customer> =>
+    this._ni('createCustomer');
 
-  createCheckout(checkout: CreateCheckoutSchema): Promise<Checkout> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
+  retrieveCustomer = (id: string): Promise<Customer> => this._ni('retrieveCustomer');
 
-  retrieveCheckout(id: string): Promise<Checkout> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
+  updateCustomer = (id: string, params: UpdateCustomerParams): Promise<Customer> =>
+    this._ni('updateCustomer');
 
-  createCustomer(params: CreateCustomerParams): Promise<Customer> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
+  deleteCustomer = (id: string): Promise<null> => this._ni('deleteCustomer');
 
-  retrieveCustomer(id: string): Promise<Customer> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
+  createSubscription = (params: CreateSubscriptionSchema): Promise<Subscription> =>
+    this._ni('createSubscription');
 
-  updateCustomer(id: string, params: UpdateCustomerParams): Promise<Customer> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
+  retrieveSubscription = (id: string): Promise<Subscription> =>
+    this._ni('retrieveSubscription');
 
-  updateSubscription(
+  updateSubscription = (
     id: string,
     params: UpdateSubscriptionSchema,
-  ): Promise<Subscription> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
+  ): Promise<Subscription> => this._ni('updateSubscription');
 
-  retrieveSubscription(id: string): Promise<Subscription> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
+  deleteSubscription = (id: string): Promise<null> => this._ni('deleteSubscription');
 
-  cancelSubscription(id: string): Promise<Subscription> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
+  cancelSubscription = (id: string): Promise<Subscription> =>
+    this._ni('cancelSubscription');
 
-  handleWebhook(payload: HandleWebhookParams): Promise<Array<WebhookEventPayload>> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
+  createRefund = (params: CreateRefundSchema): Promise<Refund> =>
+    this._ni('createRefund');
+
+  handleWebhook = (payload: HandleWebhookParams): Promise<Array<WebhookEventPayload>> =>
+    this._ni('handleWebhook');
 }

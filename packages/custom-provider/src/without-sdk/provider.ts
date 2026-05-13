@@ -26,11 +26,17 @@ import {
   schema,
   NotImplementedError,
   PaykitProviderOptions,
+  ProviderNotSupportedError,
+  CapturePaymentSchema,
+  CreateCheckoutSchema,
+  CreateCustomerParams,
+  Checkout,
 } from '@paykit-sdk/core';
-import { CreateCheckoutSchema, CreateCustomerParams } from '@paykit-sdk/core';
-import { Checkout } from '@paykit-sdk/core';
 import { z } from 'zod';
 
+/**
+ * @description Adjust these keys to match your provider's specific needs (e.g., Merchant ID, Secret Key).
+ */
 export interface WithoutProviderSDKOptions extends PaykitProviderOptions {
   /**
    * The API key for the provider
@@ -40,162 +46,107 @@ export interface WithoutProviderSDKOptions extends PaykitProviderOptions {
 
 const withoutProviderSDKOptionsSchema = schema<WithoutProviderSDKOptions>()(
   z.object({
-    apiKey: z.string(),
+    apiKey: z.string().min(1, 'API Key is required'),
+    isSandbox: z.boolean(),
   }),
 );
 
-const providerName = 'withoutSDK';
+const providerName = 'without-sdk';
 
+/**
+ * BLUEPRINT: Integration via REST API
+ * @description Use this when you are communicating directly with a provider's HTTP endpoints.
+ */
 export class WithoutProviderSDK extends AbstractPayKitProvider implements PayKitProvider {
   private _client: HTTPClient;
-
-  constructor(private readonly opts: WithoutProviderSDKOptions) {
-    super(withoutProviderSDKOptionsSchema, opts, providerName);
-
-    const debug = opts.debug ?? true;
-
-    this._client = new HTTPClient({
-      baseUrl: 'https://api.your-provider.com',
-      headers: {
-        'x-api-key': opts.apiKey,
-        'Content-Type': 'application/json',
-      },
-      retryOptions: { max: 3, baseDelay: 1000, debug },
-    });
-  }
-
   readonly providerName = providerName;
 
-  updateCheckout(id: string, params: UpdateCheckoutSchema): Promise<Checkout> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
+  constructor(protected readonly opts: WithoutProviderSDKOptions) {
+    super(withoutProviderSDKOptionsSchema, opts, providerName);
+
+    this._client = new HTTPClient({
+      baseUrl: opts.isSandbox
+        ? 'https://api.sandbox.your-provider.com'
+        : 'https://api.your-provider.com',
+      headers: {
+        Authorization: `Bearer ${opts.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      retryOptions: { max: 3, baseDelay: 1000, debug: opts.debug ?? true },
     });
   }
 
-  deleteCheckout(id: string): Promise<null> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
+  private _ni(m: string): Promise<never> {
+    return Promise.reject(
+      new NotImplementedError(m, this.providerName, { futureSupport: true }),
+    );
+  }
+  private _ns(m: string, r: string): Promise<never> {
+    return Promise.reject(
+      new ProviderNotSupportedError(m, this.providerName, { reason: r }),
+    );
   }
 
-  deleteCustomer(id: string): Promise<null> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
-
-  createSubscription(params: CreateSubscriptionSchema): Promise<Subscription> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
-
-  deleteSubscription(id: string): Promise<null> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
-
-  createPayment(params: CreatePaymentSchema): Promise<Payment> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
-
-  updatePayment(id: string, params: UpdatePaymentSchema): Promise<Payment> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
-
-  retrievePayment(id: string): Promise<Payment | null> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
-
-  deletePayment(id: string): Promise<null> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
-
-  capturePayment(id: string): Promise<Payment> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
-
-  cancelPayment(id: string): Promise<Payment> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
-
-  createRefund(params: CreateRefundSchema): Promise<Refund> {
-    throw new NotImplementedError('Method not implemented.', this.providerName, {
-      futureSupport: true,
-    });
-  }
-
+  /**
+   * @example
+   * const { error, data } = createCheckoutSchema.safeParse(params);
+   * if (error) throw ValidationError.fromZodError(error, this.providerName, 'createCheckout');
+   *
+   * const res = await this._client.post('/checkouts', { body: JSON.stringify(data) });
+   * if (!res.ok) throw new Error('Failed to create checkout');
+   * return res.value as Checkout;
+   */
   createCheckout = async (params: CreateCheckoutSchema): Promise<Checkout> => {
     const { error, data } = createCheckoutSchema.safeParse(params);
+    if (error)
+      throw ValidationError.fromZodError(error, this.providerName, 'createCheckout');
 
-    if (error) {
-      throw ValidationError.fromZodError(error, 'without-sdk', 'createCheckout');
-    }
-
-    const checkout = await this._client.post<Record<string, unknown>>('/checkouts', {
+    const res = await this._client.post<Record<string, unknown>>('/checkouts', {
       body: JSON.stringify(data),
     });
-
-    if (!checkout.ok) throw new Error('Failed to create checkout');
-
-    return checkout.value as unknown as Checkout;
+    if (!res.ok) throw new Error('Failed to create checkout');
+    return res.value as unknown as Checkout;
   };
 
   retrieveCheckout = async (id: string): Promise<Checkout> => {
     const { error } = retrieveCheckoutSchema.safeParse({ id });
-
     if (error) {
-      throw ValidationError.fromZodError(error, 'without-sdk', 'retrieveCheckout');
+      throw ValidationError.fromZodError(error, this.providerName, 'retrieveCheckout');
     }
 
-    const checkout = await this._client.get<Record<string, unknown>>(`/checkouts/${id}`);
-
-    if (!checkout.ok) throw new Error('Failed to retrieve checkout');
-
-    return checkout.value as unknown as Checkout;
+    const res = await this._client.get<Record<string, unknown>>(`/checkouts/${id}`);
+    if (!res.ok) throw new Error('Failed to retrieve checkout');
+    return res.value as unknown as Checkout;
   };
+
+  updateCheckout = (id: string, params: UpdateCheckoutSchema): Promise<Checkout> =>
+    this._ns(
+      'updateCheckout',
+      'This provider does not support updating checkouts once created.',
+    );
+
+  deleteCheckout = (id: string): Promise<null> => this._ni('deleteCheckout');
 
   createCustomer = async (params: CreateCustomerParams): Promise<Customer> => {
     const { error, data } = createCustomerSchema.safeParse(params);
+    if (error)
+      throw ValidationError.fromZodError(error, this.providerName, 'createCustomer');
 
-    if (error) {
-      throw ValidationError.fromZodError(error, 'without-sdk', 'createCustomer');
-    }
-
-    const customer = await this._client.post<Record<string, unknown>>('/customers', {
+    const res = await this._client.post<Record<string, unknown>>('/customers', {
       body: JSON.stringify(data),
     });
-
-    if (!customer.ok) throw new Error('Failed to create customer');
-
-    return customer.value as unknown as Customer;
+    if (!res.ok) throw new Error('Failed to create customer');
+    return res.value as unknown as Customer;
   };
 
   retrieveCustomer = async (id: string): Promise<Customer> => {
     const { error } = retrieveCustomerSchema.safeParse({ id });
+    if (error)
+      throw ValidationError.fromZodError(error, this.providerName, 'retrieveCustomer');
 
-    if (error) {
-      throw ValidationError.fromZodError(error, 'without-sdk', 'retrieveCustomer');
-    }
-
-    const customer = await this._client.get<Record<string, unknown>>(`/customers/${id}`);
-
-    if (!customer.ok) throw new Error('Failed to retrieve customer');
-
-    return customer.value as unknown as Customer;
+    const res = await this._client.get<Record<string, unknown>>(`/customers/${id}`);
+    if (!res.ok) throw new Error('Failed to retrieve customer');
+    return res.value as unknown as Customer;
   };
 
   updateCustomer = async (
@@ -203,70 +154,66 @@ export class WithoutProviderSDK extends AbstractPayKitProvider implements PayKit
     params: UpdateCustomerParams,
   ): Promise<Customer> => {
     const { error, data } = updateCustomerSchema.safeParse({ id, ...params });
+    if (error)
+      throw ValidationError.fromZodError(error, this.providerName, 'updateCustomer');
 
-    if (error) {
-      throw ValidationError.fromZodError(error, 'without-sdk', 'updateCustomer');
-    }
-
-    const customer = await this._client.put<Record<string, unknown>>(`/customers/${id}`, {
+    const res = await this._client.put<Record<string, unknown>>(`/customers/${id}`, {
       body: JSON.stringify(data),
     });
+    if (!res.ok) throw new Error('Failed to update customer');
+    return res.value as unknown as Customer;
+  };
 
-    if (!customer.ok) throw new Error('Failed to update customer');
+  deleteCustomer = (id: string): Promise<null> => this._ni('deleteCustomer');
 
-    return customer.value as unknown as Customer;
+  createPayment = (params: CreatePaymentSchema): Promise<Payment> =>
+    this._ni('createPayment');
+  retrievePayment = (id: string): Promise<Payment | null> => this._ni('retrievePayment');
+  updatePayment = (id: string, params: UpdatePaymentSchema): Promise<Payment> =>
+    this._ni('updatePayment');
+  deletePayment = (id: string): Promise<null> => this._ni('deletePayment');
+  capturePayment = (id: string, params: CapturePaymentSchema): Promise<Payment> =>
+    this._ni('capturePayment');
+  cancelPayment = (id: string): Promise<Payment> => this._ni('cancelPayment');
+
+  createSubscription = (params: CreateSubscriptionSchema): Promise<Subscription> =>
+    this._ni('createSubscription');
+
+  retrieveSubscription = async (id: string): Promise<Subscription> => {
+    const { error } = retrieveSubscriptionSchema.safeParse({ id });
+    if (error)
+      throw ValidationError.fromZodError(
+        error,
+        this.providerName,
+        'retrieveSubscription',
+      );
+
+    const res = await this._client.get<Record<string, unknown>>(`/subscriptions/${id}`);
+    if (!res.ok) throw new Error('Failed to retrieve subscription');
+    return res.value as unknown as Subscription;
   };
 
   updateSubscription = async (
     id: string,
     params: UpdateSubscriptionSchema,
   ): Promise<Subscription> => {
-    const { error, data } = updateSubscriptionSchema.safeParse({
-      id,
-      ...params,
+    const { error, data } = updateSubscriptionSchema.safeParse({ id, ...params });
+    if (error)
+      throw ValidationError.fromZodError(error, this.providerName, 'updateSubscription');
+
+    const res = await this._client.put<Record<string, unknown>>(`/subscriptions/${id}`, {
+      body: JSON.stringify(data),
     });
-
-    if (error) {
-      throw ValidationError.fromZodError(error, 'without-sdk', 'updateSubscription');
-    }
-
-    const subscription = await this._client.put<Record<string, unknown>>(
-      `/subscriptions/${id}`,
-      {
-        body: JSON.stringify(data),
-      },
-    );
-
-    if (!subscription.ok) throw new Error('Failed to update subscription');
-
-    return subscription.value as unknown as Subscription;
+    if (!res.ok) throw new Error('Failed to update subscription');
+    return res.value as unknown as Subscription;
   };
 
-  retrieveSubscription = async (id: string): Promise<Subscription> => {
-    const { error } = retrieveSubscriptionSchema.safeParse({ id });
+  deleteSubscription = (id: string): Promise<null> => this._ni('deleteSubscription');
+  cancelSubscription = (id: string): Promise<Subscription> =>
+    this._ni('cancelSubscription');
 
-    if (error) {
-      throw ValidationError.fromZodError(error, 'without-sdk', 'retrieveSubscription');
-    }
-
-    const subscription = await this._client.get<Record<string, unknown>>(
-      `/subscriptions/${id}`,
-    );
-
-    if (!subscription.ok) throw new Error('Failed to retrieve subscription');
-
-    return subscription.value as unknown as Subscription;
-  };
-
-  cancelSubscription = async (id: string): Promise<Subscription> => {
-    const subscription = await this._client.delete<Record<string, unknown>>(
-      `/subscriptions/${id}`,
-    );
-
-    if (!subscription.ok) throw new Error('Failed to cancel subscription');
-
-    return subscription.value as unknown as Subscription;
-  };
+  createRefund = (params: CreateRefundSchema): Promise<Refund> =>
+    this._ni('createRefund');
 
   handleWebhook = async (
     payload: HandleWebhookParams,
