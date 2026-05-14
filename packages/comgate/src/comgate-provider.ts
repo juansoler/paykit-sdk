@@ -6,7 +6,6 @@ import {
   UpdateCustomerParams,
   UpdateSubscriptionSchema,
   WebhookEventPayload,
-  HandleWebhookParams,
   validateRequiredKeys,
   CreatePaymentSchema,
   CreateRefundSchema,
@@ -31,6 +30,8 @@ import {
   schema,
   AbstractPayKitProvider,
   isIdCustomer,
+  ProviderMetadataRegistry,
+  WebhookHandlerConfig,
 } from '@paykit-sdk/core';
 import { CreateCheckoutSchema, CreateCustomerParams } from '@paykit-sdk/core';
 import { Checkout } from '@paykit-sdk/core';
@@ -42,6 +43,10 @@ import {
   ComgateWebhookStatusSuccessResponse,
 } from './schema';
 import { paykitInvoice$InboundSchema, paykitPayment$InboundSchema } from './utils/mapper';
+
+interface ComgateMetadata extends ProviderMetadataRegistry {}
+
+interface ComgateRawEvents extends Record<string, any> {}
 
 export interface ComgateOptions extends PaykitProviderOptions {
   /**
@@ -70,7 +75,10 @@ const comgateOptionsSchema = schema<ComgateOptions>()(
 
 const providerName = 'comgate';
 
-export class ComgateProvider extends AbstractPayKitProvider implements PayKitProvider {
+export class ComgateProvider
+  extends AbstractPayKitProvider
+  implements PayKitProvider<ComgateMetadata, null, ComgateRawEvents>
+{
   readonly providerName = providerName;
   private baseUrl: string;
 
@@ -94,6 +102,10 @@ export class ComgateProvider extends AbstractPayKitProvider implements PayKitPro
       },
       retryOptions: { max: 3, baseDelay: 1000, debug },
     });
+  }
+
+  get _native() {
+    return null;
   }
 
   private _throwOnError = <T>(
@@ -464,13 +476,14 @@ export class ComgateProvider extends AbstractPayKitProvider implements PayKitPro
     });
   };
 
-  handleWebhook = async ({
-    body: rawBody,
-    headers,
-  }: HandleWebhookParams): Promise<Array<WebhookEventPayload>> => {
+  handleWebhook = async (
+    payload: WebhookHandlerConfig,
+    webhookSecret: string,
+  ): Promise<Array<WebhookEventPayload<ComgateRawEvents>>> => {
+    const { body: rawBody, headersAsObject } = payload;
     let body: Record<string, unknown>;
 
-    const contentType = headers.get('content-type');
+    const contentType = headersAsObject['content-type'];
 
     if (contentType === 'application/json') {
       // REST API (v2.0) - JSON format

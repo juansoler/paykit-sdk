@@ -11,7 +11,6 @@ import {
   WebhookEventPayload,
   PaykitProviderOptions,
   Invoice,
-  HandleWebhookParams,
   invoiceStatusSchema,
   billingModeSchema,
   UpdateCheckoutSchema,
@@ -49,6 +48,8 @@ import {
   isEmailCustomer,
   refundReasonMatcher,
   Schema,
+  ProviderMetadataRegistry,
+  WebhookHandlerConfig,
 } from '@paykit-sdk/core';
 import Stripe from 'stripe';
 import {
@@ -60,6 +61,13 @@ import {
   paykitSubscription$InboundSchema,
 } from '../lib/mapper';
 
+interface StripeMetadata extends ProviderMetadataRegistry {
+  customer: Stripe.CustomerCreateParams;
+  checkout: Stripe.Checkout.SessionCreateParams;
+  payment: Stripe.PaymentIntentCreateParams;
+  subscription: Stripe.SubscriptionCreateParams;
+  refund: Stripe.RefundCreateParams;
+}
 export interface StripeOptions extends PaykitProviderOptions<Stripe.StripeConfig> {
   apiKey: string;
 }
@@ -73,7 +81,14 @@ const stripeOptionsSchema = schema<Pick<StripeOptions, 'apiKey' | 'debug'>>()(
 
 const providerName = 'stripe';
 
-export class StripeProvider extends AbstractPayKitProvider implements PayKitProvider {
+type StripeRawEvents = {
+  [K in Stripe.Event.Type as `stripe.${K}`]: Stripe.Event;
+};
+
+export class StripeProvider
+  extends AbstractPayKitProvider
+  implements PayKitProvider<StripeMetadata, Stripe, StripeRawEvents>
+{
   private stripe: Stripe;
   private opts: StripeOptions;
 
@@ -88,10 +103,13 @@ export class StripeProvider extends AbstractPayKitProvider implements PayKitProv
 
   readonly providerName = providerName;
 
-  /**
-   * Checkout management
-   */
-  createCheckout = async (params: CreateCheckoutSchema): Promise<Checkout> => {
+  get _native() {
+    return this.stripe;
+  }
+
+  createCheckout = async (
+    params: CreateCheckoutSchema<StripeMetadata['checkout']>,
+  ): Promise<Checkout> => {
     const { error, data } = createCheckoutSchema.safeParse(params);
 
     if (error) {
@@ -257,11 +275,8 @@ export class StripeProvider extends AbstractPayKitProvider implements PayKitProv
     return paykitCustomer$InboundSchema(customer);
   };
 
-  /**
-   * Subscription management
-   */
   createSubscription = async (
-    params: CreateSubscriptionSchema,
+    params: CreateSubscriptionSchema<StripeMetadata['subscription']>,
   ): Promise<Subscription> => {
     const { error, data } = createSubscriptionSchema.safeParse(params);
 
@@ -306,7 +321,7 @@ export class StripeProvider extends AbstractPayKitProvider implements PayKitProv
 
   updateSubscription = async (
     id: string,
-    params: UpdateSubscriptionSchema,
+    params: UpdateSubscriptionSchema<StripeMetadata['subscription']>,
   ): Promise<Subscription> => {
     const { error, data } = updateSubscriptionSchema.safeParse(params);
 
@@ -350,11 +365,9 @@ export class StripeProvider extends AbstractPayKitProvider implements PayKitProv
     return null;
   };
 
-  /**
-   * Payment management
-   * Create a payment intent or checkout session for a payment
-   */
-  createPayment = async (params: CreatePaymentSchema): Promise<Payment> => {
+  createPayment = async (
+    params: CreatePaymentSchema<StripeMetadata['payment']>,
+  ): Promise<Payment> => {
     const { error, data } = createPaymentSchema.safeParse(params);
 
     if (error)
@@ -506,7 +519,10 @@ export class StripeProvider extends AbstractPayKitProvider implements PayKitProv
     return paykitPayment$InboundSchema(payment);
   };
 
-  updatePayment = async (id: string, params: UpdatePaymentSchema): Promise<Payment> => {
+  updatePayment = async (
+    id: string,
+    params: UpdatePaymentSchema<StripeMetadata['payment']>,
+  ): Promise<Payment> => {
     const { error, data } = updatePaymentSchema.safeParse(params);
 
     if (error) {
@@ -600,7 +616,9 @@ export class StripeProvider extends AbstractPayKitProvider implements PayKitProv
   /**
    * Refund management
    */
-  createRefund = async (params: CreateRefundSchema): Promise<Refund> => {
+  createRefund = async (
+    params: CreateRefundSchema<StripeMetadata['refund']>,
+  ): Promise<Refund> => {
     const { error, data } = createRefundSchema.safeParse(params);
 
     if (error) {
@@ -636,13 +654,13 @@ export class StripeProvider extends AbstractPayKitProvider implements PayKitProv
     return paykitRefund$InboundSchema(refund);
   };
 
-  /**
-   * Webhook management
-   */
-  handleWebhook = async (
-    params: HandleWebhookParams,
+  handleWebhook1 = async (
+    params: WebhookHandlerConfig,
+    webhookSecret: string,
   ): Promise<Array<WebhookEventPayload>> => {
-    const { body, headers, webhookSecret } = params;
+    const { body, headersAsObject } = params;
+
+    const headers = new Headers(headersAsObject);
 
     const stripeSignature = headers.get('stripe-signature') as string;
 
@@ -918,5 +936,232 @@ export class StripeProvider extends AbstractPayKitProvider implements PayKitProv
     }
 
     return result;
+  };
+
+  handleWebhook = async (
+    params: WebhookHandlerConfig,
+    webhookSecret: string,
+  ): Promise<Array<WebhookEventPayload<StripeRawEvents>>> => {
+    const { body, headersAsObject } = params;
+
+    const stripeSignature = headersAsObject['stripe-signature'] as string;
+
+    if (!stripeSignature) {
+      throw new WebhookError('Missing Stripe signature', {
+        provider: this.providerName,
+      });
+    }
+
+    const event = this.stripe.webhooks.constructEvent(
+      body,
+      stripeSignature,
+      webhookSecret,
+    );
+
+    const results: Array<WebhookEventPayload<StripeRawEvents>> = [];
+
+    results.push({
+      id: event.id,
+      type: `stripe.${event.type}`,
+      created: event.created,
+      data: event,
+      is_raw: true,
+    });
+
+    const processStandardMapping = async (
+      ev: Stripe.Event,
+    ): Promise<Array<WebhookEventPayload<StripeRawEvents>> | null> => {
+      switch (ev.type) {
+        case 'checkout.session.completed': {
+          const data = ev.data.object as Stripe.Checkout.Session;
+          if (data.mode !== 'payment') return null;
+
+          const customFields = data.custom_fields.reduce(
+            (acc, field) => {
+              if (field.type === 'dropdown') acc[field.key] = field.dropdown?.value;
+              else if (field.type === 'text') acc[field.key] = field.text?.value;
+              else if (field.type === 'numeric') acc[field.key] = field.numeric?.value;
+              return acc;
+            },
+            {} as Record<string, any>,
+          );
+
+          const invoiceData = {
+            id: data.id,
+            status: invoiceStatusSchema.parse('paid'),
+            paid_at: new Date(ev.created * 1000).toISOString(),
+            amount_paid: data.amount_total ?? 0,
+            currency: data.currency ?? '',
+            metadata: omitInternalMetadata(data.metadata ?? {}),
+            customer:
+              typeof data.customer === 'string'
+                ? data.customer
+                : (data.customer?.id ?? ''),
+            billing_mode: billingModeSchema.parse('one_time'),
+            subscription_id: null,
+            custom_fields: customFields ?? null,
+            line_items:
+              data.line_items?.data.map(item => ({
+                id: item.price!.id,
+                quantity: item.quantity!,
+              })) ?? [],
+          };
+
+          return [
+            paykitEvent$InboundSchema<Invoice>({
+              type: 'invoice.generated',
+              created: ev.created,
+              id: ev.id,
+              data: invoiceData,
+            }),
+          ];
+        }
+
+        case 'invoice.paid': {
+          const data = ev.data.object as Stripe.Invoice;
+          const relevantBillingReasons = ['subscription_create', 'subscription_cycle'];
+          if (
+            data.status !== 'paid' ||
+            !relevantBillingReasons.includes(data.billing_reason!)
+          ) {
+            return null;
+          }
+          return [
+            paykitEvent$InboundSchema<Invoice>({
+              type: 'invoice.generated',
+              created: ev.created,
+              id: ev.id,
+              data: paykitInvoice$InboundSchema({ ...data, billingMode: 'recurring' }),
+            }),
+          ];
+        }
+
+        case 'customer.created':
+          return [
+            paykitEvent$InboundSchema<Customer>({
+              type: 'customer.created',
+              created: ev.created,
+              id: ev.id,
+              data: paykitCustomer$InboundSchema(ev.data.object as Stripe.Customer),
+            }),
+          ];
+
+        case 'customer.updated':
+          return [
+            paykitEvent$InboundSchema<Customer>({
+              type: 'customer.updated',
+              created: ev.created,
+              id: ev.id,
+              data: paykitCustomer$InboundSchema(ev.data.object as Stripe.Customer),
+            }),
+          ];
+
+        case 'customer.deleted':
+          return [
+            paykitEvent$InboundSchema<null>({
+              type: 'customer.deleted',
+              created: ev.created,
+              id: ev.id,
+              data: null,
+            }),
+          ];
+
+        case 'customer.subscription.created':
+          return [
+            paykitEvent$InboundSchema<Subscription>({
+              type: 'subscription.created',
+              created: ev.created,
+              id: ev.id,
+              data: paykitSubscription$InboundSchema(
+                ev.data.object as Stripe.Subscription,
+              ),
+            }),
+          ];
+
+        case 'customer.subscription.updated':
+          return [
+            paykitEvent$InboundSchema<Subscription>({
+              type: 'subscription.updated',
+              created: ev.created,
+              id: ev.id,
+              data: paykitSubscription$InboundSchema(
+                ev.data.object as Stripe.Subscription,
+              ),
+            }),
+          ];
+
+        case 'customer.subscription.deleted':
+          return [
+            paykitEvent$InboundSchema<null>({
+              type: 'subscription.canceled',
+              created: ev.created,
+              id: ev.id,
+              data: null,
+            }),
+          ];
+
+        case 'payment_intent.created':
+          return [
+            paykitEvent$InboundSchema<Payment>({
+              type: 'payment.created',
+              created: ev.created,
+              id: ev.id,
+              data: paykitPayment$InboundSchema(ev.data.object as Stripe.PaymentIntent),
+            }),
+          ];
+
+        case 'payment_intent.canceled':
+          return [
+            paykitEvent$InboundSchema<Payment>({
+              type: 'payment.canceled',
+              created: ev.created,
+              id: ev.id,
+              data: paykitPayment$InboundSchema(ev.data.object as Stripe.PaymentIntent),
+            }),
+          ];
+
+        case 'payment_intent.processing':
+        case 'payment_intent.requires_action':
+        case 'payment_intent.amount_capturable_updated':
+        case 'payment_intent.partially_funded':
+        case 'payment_intent.succeeded':
+        case 'payment_intent.payment_failed':
+          return [
+            paykitEvent$InboundSchema<Payment>({
+              type: 'payment.updated',
+              created: ev.created,
+              id: ev.id,
+              data: paykitPayment$InboundSchema(ev.data.object as Stripe.PaymentIntent),
+            }),
+          ];
+
+        case 'refund.created':
+          return [
+            paykitEvent$InboundSchema<Refund>({
+              type: 'refund.created',
+              created: ev.created,
+              id: ev.id,
+              data: paykitRefund$InboundSchema(ev.data.object as Stripe.Refund),
+            }),
+          ];
+
+        default:
+          return null;
+      }
+    };
+
+    const standardMappedEvents = await processStandardMapping(event);
+
+    if (standardMappedEvents) {
+      results.push(...standardMappedEvents);
+    } else {
+      if (this.opts.debug) {
+        console.info(
+          `No standard mapping found for Stripe event: ${event.type}. It is still available as a raw event.`,
+        );
+      }
+    }
+
+    return results;
   };
 }

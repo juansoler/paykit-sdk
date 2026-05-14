@@ -7,7 +7,6 @@ import {
   UpdateCustomerParams,
   UpdateSubscriptionSchema,
   WebhookEventPayload,
-  HandleWebhookParams,
   CreatePaymentSchema,
   CreateRefundSchema,
   CreateSubscriptionSchema,
@@ -38,6 +37,8 @@ import {
   LooseAutoComplete,
   OAuth2TokenManager,
   isEmailCustomer,
+  ProviderMetadataRegistry,
+  WebhookHandlerConfig,
 } from '@paykit-sdk/core';
 import { CreateCustomerParams } from '@paykit-sdk/core';
 import * as crypto from 'crypto';
@@ -55,6 +56,10 @@ import {
   paykitRefund$InboundSchema,
   paykitSubscription$InboundSchema,
 } from './utils/mapper';
+
+interface GoPayMetadata extends ProviderMetadataRegistry {}
+
+interface GoPayRawEvents extends Record<string, any> {}
 
 export interface GoPayOptions extends PaykitProviderOptions {
   /**
@@ -91,13 +96,20 @@ const gopayOptionsSchema = schema<GoPayOptions>()(
 
 const providerName = 'gopay';
 
-export class GoPayProvider extends AbstractPayKitProvider implements PayKitProvider {
+export class GoPayProvider
+  extends AbstractPayKitProvider
+  implements PayKitProvider<GoPayMetadata, null, GoPayRawEvents>
+{
   readonly providerName = providerName;
 
   private _client: HTTPClient;
   private baseUrl: string;
 
   private tokenManager: OAuth2TokenManager;
+
+  get _native() {
+    return null;
+  }
 
   constructor(private readonly opts: GoPayOptions) {
     super(gopayOptionsSchema, opts, providerName);
@@ -685,8 +697,9 @@ export class GoPayProvider extends AbstractPayKitProvider implements PayKitProvi
   }
 
   handleWebhook = async (
-    payload: HandleWebhookParams,
-  ): Promise<Array<WebhookEventPayload>> => {
+    payload: WebhookHandlerConfig,
+    webhookSecret: string,
+  ): Promise<Array<WebhookEventPayload<GoPayRawEvents>>> => {
     const { fullUrl } = payload;
 
     const paymentId = new URL(fullUrl).searchParams.get('id');

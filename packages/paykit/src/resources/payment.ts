@@ -89,7 +89,7 @@ export const paymentSchema = schema<Payment>()(
   }),
 );
 
-export interface CreatePaymentSchema
+export interface CreatePaymentSchema<TProviderMetadata = Record<string, unknown>>
   extends OverrideProps<
     Omit<Payment, 'id' | 'status' | 'requires_action' | 'payment_url'>,
     { metadata?: Record<string, unknown> }
@@ -97,7 +97,7 @@ export interface CreatePaymentSchema
   /**
    * The provider specific params of the payment.
    */
-  provider_metadata?: Record<string, unknown>;
+  provider_metadata?: TProviderMetadata;
 
   /**
    * The shipping info of the payment.
@@ -127,9 +127,9 @@ export const createPaymentSchema = schema<CreatePaymentSchema>()(
     }),
 );
 
-export interface UpdatePaymentSchema
+export interface UpdatePaymentSchema<TProviderMetadata = Record<string, unknown>>
   extends Partial<Omit<Payment, 'id' | 'status' | 'item_id'>> {
-  provider_metadata?: Record<string, unknown>;
+  provider_metadata?: TProviderMetadata;
 }
 
 export const updatePaymentSchema = schema<UpdatePaymentSchema>()(

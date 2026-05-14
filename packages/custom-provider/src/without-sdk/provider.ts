@@ -13,7 +13,7 @@ import {
   updateCustomerSchema,
   updateSubscriptionSchema,
   WebhookEventPayload,
-  HandleWebhookParams,
+  WebhookHandlerConfig,
   CreatePaymentSchema,
   CreateRefundSchema,
   CreateSubscriptionSchema,
@@ -31,8 +31,11 @@ import {
   CreateCheckoutSchema,
   CreateCustomerParams,
   Checkout,
+  ProviderMetadataRegistry,
 } from '@paykit-sdk/core';
 import { z } from 'zod';
+
+export interface WithoutProviderMetadata extends ProviderMetadataRegistry {}
 
 /**
  * @description Adjust these keys to match your provider's specific needs (e.g., Merchant ID, Secret Key).
@@ -57,7 +60,10 @@ const providerName = 'without-sdk';
  * BLUEPRINT: Integration via REST API
  * @description Use this when you are communicating directly with a provider's HTTP endpoints.
  */
-export class WithoutProviderSDK extends AbstractPayKitProvider implements PayKitProvider {
+export class WithoutProviderSDK
+  extends AbstractPayKitProvider
+  implements PayKitProvider<WithoutProviderMetadata, any, Record<string, any>>
+{
   private _client: HTTPClient;
   readonly providerName = providerName;
 
@@ -74,6 +80,10 @@ export class WithoutProviderSDK extends AbstractPayKitProvider implements PayKit
       },
       retryOptions: { max: 3, baseDelay: 1000, debug: opts.debug ?? true },
     });
+  }
+
+  get _native() {
+    return this._client;
   }
 
   private _ni(m: string): Promise<never> {
@@ -96,7 +106,9 @@ export class WithoutProviderSDK extends AbstractPayKitProvider implements PayKit
    * if (!res.ok) throw new Error('Failed to create checkout');
    * return res.value as Checkout;
    */
-  createCheckout = async (params: CreateCheckoutSchema): Promise<Checkout> => {
+  createCheckout = async (
+    params: CreateCheckoutSchema<WithoutProviderMetadata['checkout']>,
+  ): Promise<Checkout> => {
     const { error, data } = createCheckoutSchema.safeParse(params);
     if (error)
       throw ValidationError.fromZodError(error, this.providerName, 'createCheckout');
@@ -119,7 +131,10 @@ export class WithoutProviderSDK extends AbstractPayKitProvider implements PayKit
     return res.value as unknown as Checkout;
   };
 
-  updateCheckout = (id: string, params: UpdateCheckoutSchema): Promise<Checkout> =>
+  updateCheckout = async (
+    id: string,
+    params: UpdateCheckoutSchema<WithoutProviderMetadata['checkout']>,
+  ): Promise<Checkout> =>
     this._ns(
       'updateCheckout',
       'This provider does not support updating checkouts once created.',
@@ -127,7 +142,9 @@ export class WithoutProviderSDK extends AbstractPayKitProvider implements PayKit
 
   deleteCheckout = (id: string): Promise<null> => this._ni('deleteCheckout');
 
-  createCustomer = async (params: CreateCustomerParams): Promise<Customer> => {
+  createCustomer = async (
+    params: CreateCustomerParams<WithoutProviderMetadata['customer']>,
+  ): Promise<Customer> => {
     const { error, data } = createCustomerSchema.safeParse(params);
     if (error)
       throw ValidationError.fromZodError(error, this.providerName, 'createCustomer');
@@ -216,8 +233,17 @@ export class WithoutProviderSDK extends AbstractPayKitProvider implements PayKit
     this._ni('createRefund');
 
   handleWebhook = async (
-    payload: HandleWebhookParams,
+    payload: WebhookHandlerConfig,
+    webhookSecret: string,
   ): Promise<Array<WebhookEventPayload>> => {
+    const { headersAsObject } = payload;
+
+    const headers = new Headers(headersAsObject);
+
+    const signature = headers.get('X-Signature');
+
+    if (!signature) throw new Error('Signature is required');
+
     throw new NotImplementedError('Method not implemented.', this.providerName, {
       futureSupport: true,
     });

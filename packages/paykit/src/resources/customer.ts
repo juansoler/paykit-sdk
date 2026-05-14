@@ -69,7 +69,17 @@ export const payeeSchema = schema<Payee>()(
   z.union([z.string(), customerSchema.pick({ email: true })]),
 );
 
-export interface CreateCustomerParams
+export interface CreateCustomerParams<TProviderMetadata = Record<string, unknown>>
+  extends OverrideProps<
+    Pick<Customer, 'email' | 'name' | 'phone' | 'metadata'>,
+    {
+      name?: string;
+      billing: BillingInfo | null;
+      provider_metadata?: TProviderMetadata;
+    }
+  > {}
+
+export interface CreateCustomerParams1
   extends OverrideProps<
     Pick<Customer, 'email' | 'name' | 'phone' | 'metadata'>,
     { name?: string; billing: BillingInfo | null }
@@ -82,12 +92,13 @@ export const createCustomerSchema = schema<CreateCustomerParams>()(
     phone: z.string(),
     metadata: metadataSchema.optional(),
     billing: billingSchema.nullable(),
+    provider_metadata: z.record(z.string(), z.unknown()).optional(),
   }),
 );
 
-export interface UpdateCustomerParams
+export interface UpdateCustomerParams<TProviderMetadata = Record<string, unknown>>
   extends Partial<Pick<Customer, 'email' | 'name' | 'phone' | 'metadata'>> {
-  provider_metadata?: Record<string, unknown>;
+  provider_metadata?: TProviderMetadata;
   billing?: BillingInfo | null;
 }
 

@@ -43,7 +43,7 @@ export const refundSchema = schema<Refund>()(
   }),
 );
 
-export interface CreateRefundSchema
+export interface CreateRefundSchema<TProviderMetadata = Record<string, unknown>>
   extends Pick<Refund, 'amount' | 'reason' | 'metadata'> {
   /**
    * The unique identifier of the payment.
@@ -53,7 +53,7 @@ export interface CreateRefundSchema
   /**
    * The provider metadata of the refund.
    */
-  provider_metadata?: Record<string, unknown>;
+  provider_metadata?: TProviderMetadata;
 }
 
 export const createRefundSchema = schema<CreateRefundSchema>()(

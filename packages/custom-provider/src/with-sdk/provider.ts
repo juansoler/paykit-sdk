@@ -1,5 +1,4 @@
 import {
-  HandleWebhookParams,
   Checkout,
   CreateCheckoutSchema,
   CreateCustomerParams,
@@ -22,8 +21,18 @@ import {
   NotImplementedError,
   ProviderNotSupportedError,
   CapturePaymentSchema,
+  WebhookHandlerConfig,
+  ProviderMetadataRegistry,
 } from '@paykit-sdk/core';
 import { z } from 'zod';
+
+class SomeProviderSDK {
+  constructor(private readonly apiKey: string) {
+    this.apiKey = apiKey;
+  }
+}
+
+export interface WithProviderMetadata extends ProviderMetadataRegistry {}
 
 /**
  * @description Adjust these keys to match the credentials required by the official SDK.
@@ -48,20 +57,17 @@ const providerName = 'with-sdk';
  * BLUEPRINT: Integration via External SDK
  * @description Use this when wrapping an existing official library (e.g., Stripe, Adyen).
  */
-export class WithProviderSDK extends AbstractPayKitProvider implements PayKitProvider {
+export class WithProviderSDK
+  extends AbstractPayKitProvider
+  implements PayKitProvider<WithProviderMetadata, any, Record<string, any>>
+{
   readonly providerName = providerName;
-  // private sdk: SomeProviderSDK;
+  private sdk: SomeProviderSDK | null = null;
 
   constructor(private readonly opts: WithProviderSDKOptions) {
     super(withProviderSDKOptionsSchema, opts, providerName);
 
-    /**
-     * @example
-     * this.sdk = new SomeProviderSDK({
-     *   apiKey: opts.apiKey,
-     *   environment: opts.isSandbox ? 'sandbox' : 'live',
-     * });
-     */
+    this.sdk = new SomeProviderSDK(opts.apiKey);
   }
 
   private _ni(m: string): Promise<never> {
@@ -73,6 +79,10 @@ export class WithProviderSDK extends AbstractPayKitProvider implements PayKitPro
     return Promise.reject(
       new ProviderNotSupportedError(m, this.providerName, { reason: r }),
     );
+  }
+
+  get _native() {
+    return this.sdk;
   }
 
   /**
@@ -138,6 +148,8 @@ export class WithProviderSDK extends AbstractPayKitProvider implements PayKitPro
   createRefund = (params: CreateRefundSchema): Promise<Refund> =>
     this._ni('createRefund');
 
-  handleWebhook = (payload: HandleWebhookParams): Promise<Array<WebhookEventPayload>> =>
-    this._ni('handleWebhook');
+  handleWebhook = (
+    payload: WebhookHandlerConfig,
+    webhookSecret: string,
+  ): Promise<Array<WebhookEventPayload>> => this._ni('handleWebhook');
 }

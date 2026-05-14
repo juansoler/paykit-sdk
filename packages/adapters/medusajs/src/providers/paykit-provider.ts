@@ -484,7 +484,7 @@ export class PaykitMedusaJSAdapter extends AbstractPaymentProvider<PaykitMedusaJ
 
     const webhookEvents = await webhook.handle({
       body: bodyString,
-      headers: new Headers(stringifiedHeaders),
+      headersAsObject: stringifiedHeaders,
       fullUrl: getURLFromHeaders(stringifiedHeaders),
     });
 

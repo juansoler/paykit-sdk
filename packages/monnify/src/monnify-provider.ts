@@ -20,11 +20,9 @@ import {
   CapturePaymentSchema,
   CreateRefundSchema,
   Refund,
-  HandleWebhookParams,
   WebhookEventPayload,
   WebhookError,
   parseJSON,
-  WebhookEventType,
   OAuth2TokenManager,
   PAYKIT_METADATA_KEY,
   createCheckoutSchema,
@@ -34,6 +32,8 @@ import {
   OperationFailedError,
   InvalidTypeError,
   isEmailCustomer,
+  ProviderMetadataRegistry,
+  WebhookHandlerConfig,
 } from '@paykit-sdk/core';
 import { sha512 } from 'js-sha512';
 import { z } from 'zod';
@@ -43,6 +43,10 @@ import {
   paykitPayment$InboundSchema,
   paykitRefund$InboundSchema,
 } from './utils/mapper';
+
+interface MonnifyMetadata extends ProviderMetadataRegistry {}
+
+interface MonnifyRawEvents extends Record<string, any> {}
 
 export interface MonnifyOptions extends PaykitProviderOptions {
   /**
@@ -71,13 +75,20 @@ const monnifyOptionsSchema = schema<MonnifyOptions>()(
 
 const providerName = 'monnify';
 
-export class MonnifyProvider extends AbstractPayKitProvider implements PayKitProvider {
+export class MonnifyProvider
+  extends AbstractPayKitProvider
+  implements PayKitProvider<MonnifyMetadata, null, MonnifyRawEvents>
+{
   readonly providerName = providerName;
 
   private _client: HTTPClient;
   private baseUrl: string;
 
   private tokenManager: OAuth2TokenManager;
+
+  get _native() {
+    return null;
+  }
 
   constructor(private readonly opts: MonnifyOptions) {
     super(monnifyOptionsSchema, opts, providerName);
@@ -410,11 +421,12 @@ export class MonnifyProvider extends AbstractPayKitProvider implements PayKitPro
   };
 
   handleWebhook = async (
-    payload: HandleWebhookParams,
-  ): Promise<Array<WebhookEventPayload>> => {
-    const { body, headers, webhookSecret } = payload;
+    payload: WebhookHandlerConfig,
+    webhookSecret: string,
+  ): Promise<Array<WebhookEventPayload<MonnifyRawEvents>>> => {
+    const { body, headersAsObject } = payload;
 
-    const receivedHash = headers.get('monnify-signature');
+    const receivedHash = headersAsObject['monnify-signature'];
 
     if (!receivedHash) {
       throw new WebhookError('Missing Monnify signature', {
@@ -459,7 +471,7 @@ export class MonnifyProvider extends AbstractPayKitProvider implements PayKitPro
         },
       ];
     } else {
-      const event = eventMapper as WebhookEventType;
+      const event = eventMapper as string;
 
       return [
         {

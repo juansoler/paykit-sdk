@@ -10,7 +10,6 @@ import {
   paykitEvent$InboundSchema,
   WebhookEventPayload,
   PaykitProviderOptions,
-  HandleWebhookParams,
   UpdateCheckoutSchema,
   CreateSubscriptionSchema,
   CreatePaymentSchema,
@@ -30,6 +29,8 @@ import {
   createCheckoutSchema,
   ValidationError,
   Schema,
+  ProviderMetadataRegistry,
+  WebhookHandlerConfig,
 } from '@paykit-sdk/core';
 import {
   CheckoutPaymentIntent,
@@ -43,6 +44,7 @@ import {
 import { SubscriptionsController } from './controllers/subscription';
 import { WebhookController } from './controllers/webhook';
 import { VerifyWebhookStatus } from './schema';
+import { PayPalRawEvents, PayPalWebhookBase } from './types';
 import {
   paykitCheckout$InboundSchema,
   paykitPayment$InboundSchema,
@@ -52,6 +54,8 @@ import {
   paykitRefundWebhook$InboundSchema,
   paykitSubscriptionWebhook$InboundSchema,
 } from './utils/mapper';
+
+interface PayPalMetadata extends ProviderMetadataRegistry {}
 
 const PAYPAL_METADATA_MAX_LENGTH = 127;
 
@@ -77,8 +81,15 @@ const paypalOptionsSchema = schema<PayPalOptions>()(
 );
 
 const providerName = 'paypal';
-export class PayPalProvider extends AbstractPayKitProvider implements PayKitProvider {
+export class PayPalProvider
+  extends AbstractPayKitProvider
+  implements PayKitProvider<PayPalMetadata, Client, PayPalRawEvents>
+{
   readonly providerName = providerName;
+
+  get _native() {
+    return this.client;
+  }
 
   private client: Client;
   private ordersController: OrdersController;
@@ -468,178 +479,124 @@ export class PayPalProvider extends AbstractPayKitProvider implements PayKitProv
     }
   };
 
-  /**
-   * Webhook management
-   */
   handleWebhook = async (
-    params: HandleWebhookParams,
-  ): Promise<Array<WebhookEventPayload>> => {
-    const { body, headers, webhookSecret: webhookId } = params;
+    params: WebhookHandlerConfig,
+    webhookSecret: string,
+  ): Promise<Array<WebhookEventPayload<PayPalRawEvents>>> => {
+    const { body, headersAsObject } = params;
 
     const { result } = await this.webhookController.verifyWebhook({
-      authAlgo: headers.get('paypal-auth-algo') as string,
-      certUrl: headers.get('paypal-cert-url') as string,
-      transmissionId: headers.get('paypal-transmission-id') as string,
-      transmissionSig: headers.get('paypal-transmission-sig') as string,
-      transmissionTime: headers.get('paypal-transmission-time') as string,
-      webhookId,
+      authAlgo: headersAsObject['paypal-auth-algo'] as string,
+      certUrl: headersAsObject['paypal-cert-url'] as string,
+      transmissionId: headersAsObject['paypal-transmission-id'] as string,
+      transmissionSig: headersAsObject['paypal-transmission-sig'] as string,
+      transmissionTime: headersAsObject['paypal-transmission-time'] as string,
+      webhookId: webhookSecret,
       webhookEvent: JSON.parse(body),
     });
 
     if (result.verification_status !== VerifyWebhookStatus.SUCCESS) {
-      throw new WebhookError('Webhook verification failed', {
+      throw new WebhookError('PayPal Webhook verification failed', {
         provider: this.providerName,
       });
     }
 
-    const event = JSON.parse(body);
+    const event = JSON.parse(body) as PayPalWebhookBase;
+
     const eventType = event.event_type;
+    const results: Array<WebhookEventPayload<PayPalRawEvents>> = [];
 
-    const webhookHandlers: Record<string, () => Promise<Array<WebhookEventPayload>>> = {
-      'CHECKOUT.ORDER.APPROVED': async () => {
-        const payment = paykitPaymentWebhook$InboundSchema(
-          event.resource as Record<string, unknown>,
-        );
+    results.push({
+      id: event.id,
+      type: `paypal.${eventType}` as any,
+      created: Math.floor(new Date(event.create_time).getTime() / 1000),
+      data: event as any,
+      is_raw: true,
+    });
 
-        return [
-          paykitEvent$InboundSchema<Payment>({
-            type: 'payment.created',
-            created: Date.now() / 1000,
-            id: event.id,
-            data: payment,
-          }),
-        ];
-      },
+    const processStandard = async (): Promise<Array<
+      WebhookEventPayload<PayPalRawEvents>
+    > | null> => {
+      const resource = event.resource as Record<string, unknown>;
+      const timestamp = Math.floor(new Date(event.create_time).getTime() / 1000);
 
-      'CHECKOUT.ORDER.COMPLETED': async () => {
-        const payment = paykitPaymentWebhook$InboundSchema(
-          event.resource as Record<string, unknown>,
-        );
+      switch (eventType) {
+        case 'CHECKOUT.ORDER.APPROVED':
+          return [
+            paykitEvent$InboundSchema<Payment>({
+              type: 'payment.created',
+              created: timestamp,
+              id: event.id,
+              data: paykitPaymentWebhook$InboundSchema(resource),
+            }),
+          ];
 
-        return [
-          paykitEvent$InboundSchema<Payment>({
-            type: 'payment.updated',
-            created: Date.now() / 1000,
-            id: event.id,
-            data: payment,
-          }),
-        ];
-      },
+        case 'CHECKOUT.ORDER.COMPLETED':
+        case 'PAYMENT.CAPTURE.COMPLETED':
+          return [
+            paykitEvent$InboundSchema<Payment>({
+              type: 'payment.updated',
+              created: timestamp,
+              id: event.id,
+              data:
+                eventType === 'CHECKOUT.ORDER.COMPLETED'
+                  ? paykitPaymentWebhook$InboundSchema(resource)
+                  : paykitPaymentCaptureWebhook$InboundSchema(resource),
+            }),
+          ];
 
-      'PAYMENT.CAPTURE.COMPLETED': async () => {
-        const payment = paykitPaymentCaptureWebhook$InboundSchema(
-          event.resource as Record<string, unknown>,
-        );
+        case 'PAYMENT.CAPTURE.REFUNDED':
+          return [
+            paykitEvent$InboundSchema<Refund>({
+              type: 'refund.created',
+              created: timestamp,
+              id: event.id,
+              data: paykitRefundWebhook$InboundSchema(resource),
+            }),
+          ];
 
-        return [
-          paykitEvent$InboundSchema<Payment>({
-            type: 'payment.updated',
-            created: Date.now() / 1000,
-            id: event.id,
-            data: payment,
-          }),
-        ];
-      },
+        case 'BILLING.SUBSCRIPTION.CREATED':
+          return [
+            paykitEvent$InboundSchema<Subscription>({
+              type: 'subscription.created',
+              created: timestamp,
+              id: event.id,
+              data: paykitSubscriptionWebhook$InboundSchema(resource),
+            }),
+          ];
 
-      'PAYMENT.CAPTURE.REFUNDED': async () => {
-        const refund = paykitRefundWebhook$InboundSchema(
-          event.resource as Record<string, unknown>,
-        );
+        case 'BILLING.SUBSCRIPTION.UPDATED':
+        case 'BILLING.SUBSCRIPTION.SUSPENDED':
+        case 'BILLING.SUBSCRIPTION.ACTIVATED':
+          return [
+            paykitEvent$InboundSchema<Subscription>({
+              type: 'subscription.updated',
+              created: timestamp,
+              id: event.id,
+              data: paykitSubscriptionWebhook$InboundSchema(resource),
+            }),
+          ];
 
-        return [
-          paykitEvent$InboundSchema<Refund>({
-            type: 'refund.created',
-            created: Date.now() / 1000,
-            id: event.id,
-            data: refund,
-          }),
-        ];
-      },
+        case 'BILLING.SUBSCRIPTION.CANCELLED':
+        case 'BILLING.SUBSCRIPTION.EXPIRED':
+          return [
+            paykitEvent$InboundSchema<Subscription>({
+              type: 'subscription.canceled',
+              created: timestamp,
+              id: event.id,
+              data: paykitSubscriptionWebhook$InboundSchema(resource),
+            }),
+          ];
 
-      'BILLING.SUBSCRIPTION.CREATED': async () => {
-        const subscription = paykitSubscriptionWebhook$InboundSchema(
-          event.resource as Record<string, unknown>,
-        );
-
-        return [
-          paykitEvent$InboundSchema<Subscription>({
-            type: 'subscription.created',
-            created: Date.now() / 1000,
-            id: event.id,
-            data: subscription,
-          }),
-        ];
-      },
-
-      'BILLING.SUBSCRIPTION.UPDATED': async () => {
-        const subscription = paykitSubscriptionWebhook$InboundSchema(
-          event.resource as Record<string, unknown>,
-        );
-
-        return [
-          paykitEvent$InboundSchema<Subscription>({
-            type: 'subscription.updated',
-            created: Date.now() / 1000,
-            id: event.id,
-            data: subscription,
-          }),
-        ];
-      },
-
-      'BILLING.SUBSCRIPTION.SUSPENDED': async () => {
-        const subscription = paykitSubscriptionWebhook$InboundSchema(
-          event.resource as Record<string, unknown>,
-        );
-
-        return [
-          paykitEvent$InboundSchema<Subscription>({
-            type: 'subscription.updated',
-            created: Date.now() / 1000,
-            id: event.id,
-            data: subscription,
-          }),
-        ];
-      },
-
-      'BILLING.SUBSCRIPTION.CANCELLED': async () => {
-        const subscription = paykitSubscriptionWebhook$InboundSchema(
-          event.resource as Record<string, unknown>,
-        );
-
-        return [
-          paykitEvent$InboundSchema<Subscription>({
-            type: 'subscription.canceled',
-            created: Date.now() / 1000,
-            id: event.id,
-            data: subscription,
-          }),
-        ];
-      },
-
-      'BILLING.SUBSCRIPTION.EXPIRED': async () => {
-        const subscription = paykitSubscriptionWebhook$InboundSchema(
-          event.resource as Record<string, unknown>,
-        );
-
-        return [
-          paykitEvent$InboundSchema<Subscription>({
-            type: 'subscription.canceled',
-            created: Date.now() / 1000,
-            id: event.id,
-            data: subscription,
-          }),
-        ];
-      },
+        default:
+          return null;
+      }
     };
 
-    const handler = webhookHandlers[eventType];
+    const standardMapped = await processStandard();
 
-    if (!handler) {
-      throw new WebhookError(`Unhandled event type: ${eventType}`, {
-        provider: this.providerName,
-      });
-    }
+    if (standardMapped) results.push(...standardMapped);
 
-    return await handler();
+    return results;
   };
 }

@@ -104,7 +104,7 @@ export const subscriptionSchema = schema<Subscription>()(
   }),
 );
 
-export interface UpdateSubscriptionSchema {
+export interface UpdateSubscriptionSchema<TProviderMetadata = Record<string, unknown>> {
   /**
    * The metadata of the subscription.
    */
@@ -113,7 +113,7 @@ export interface UpdateSubscriptionSchema {
   /**
    * The provider metadata of the subscription.
    */
-  provider_metadata?: Record<string, unknown>;
+  provider_metadata?: TProviderMetadata;
 }
 
 export const updateSubscriptionSchema = schema<UpdateSubscriptionSchema>()(
@@ -149,7 +149,7 @@ export const deleteSubscriptionSchema = schema<DeleteSubscriptionSchema>()(
   }),
 );
 
-export interface CreateSubscriptionSchema
+export interface CreateSubscriptionSchema<TProviderMetadata = Record<string, unknown>>
   extends Omit<
     Subscription,
     | 'id'
@@ -163,7 +163,7 @@ export interface CreateSubscriptionSchema
   /**
    * The provider metadata of the subscription.
    */
-  provider_metadata?: Record<string, unknown>;
+  provider_metadata?: TProviderMetadata;
 
   /**
    * The quantity of the subscription.

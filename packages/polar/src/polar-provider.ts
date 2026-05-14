@@ -8,7 +8,6 @@ import {
   CreateCheckoutSchema,
   Subscription,
   UpdateSubscriptionSchema,
-  HandleWebhookParams,
   PayKitProvider,
   PaykitProviderOptions,
   Invoice,
@@ -44,6 +43,8 @@ import {
   stringifyMetadataValues,
   refundReasonMatcher,
   Schema,
+  WebhookHandlerConfig,
+  ProviderMetadataRegistry,
 } from '@paykit-sdk/core';
 import { Polar, SDKOptions, ServerList } from '@polar-sh/sdk';
 import { CountryAlpha2Input } from '@polar-sh/sdk/models/components/addressinput.js';
@@ -67,6 +68,14 @@ import {
   paykitRefund$InboundSchema,
   paykitSubscription$InboundSchema,
 } from '../lib/mapper';
+
+interface PolarMetadata extends ProviderMetadataRegistry {}
+
+type PolarWebhookPayload = ReturnType<typeof validateEvent>;
+
+type PolarRawEvents = {
+  [E in PolarWebhookPayload as `polar.${E['type']}`]: E;
+};
 
 export interface PolarOptions
   extends PaykitProviderOptions<
@@ -93,7 +102,10 @@ const polarOptionsSchema = schema<PolarOptions>()(
 
 const providerName = 'polar';
 
-export class PolarProvider extends AbstractPayKitProvider implements PayKitProvider {
+export class PolarProvider
+  extends AbstractPayKitProvider
+  implements PayKitProvider<PolarMetadata, Polar, PolarRawEvents>
+{
   readonly providerName = providerName;
 
   private polar: Polar;
@@ -111,6 +123,10 @@ export class PolarProvider extends AbstractPayKitProvider implements PayKitProvi
 
     this.polar = new Polar({ accessToken, serverURL, ...rest });
     this.refunds = new Refunds({ accessToken, serverURL, ...rest });
+  }
+
+  get _native() {
+    return this.polar;
   }
 
   /**
@@ -502,220 +518,156 @@ export class PolarProvider extends AbstractPayKitProvider implements PayKitProvi
     return paykitRefund$InboundSchema(refund);
   };
 
-  /**
-   * Webhook management
-   */
   handleWebhook = async (
-    params: HandleWebhookParams,
-  ): Promise<Array<WebhookEventPayload>> => {
-    const { body, headers, webhookSecret } = params;
+    params: WebhookHandlerConfig,
+    webhookSecret: string,
+  ): Promise<Array<WebhookEventPayload<PolarRawEvents>>> => {
+    const { body, headersAsObject } = params;
 
-    const webhookId = headers.get('webhook-id') as string;
-    const webhookTimestamp = headers.get('webhook-timestamp') as string;
+    const webhookId = (headersAsObject['webhook-id'] || '') as string;
+    const webhookTimestamp = (headersAsObject['webhook-timestamp'] || '0') as string;
 
-    const plainHeaders = Object.fromEntries(headers.entries());
+    const { data, type } = validateEvent(body, headersAsObject, webhookSecret);
 
-    const { data, type } = validateEvent(body, plainHeaders, webhookSecret);
+    const results: Array<WebhookEventPayload<PolarRawEvents>> = [];
 
-    type PolarEventLiteral = Exclude<typeof type, undefined>;
+    results.push({
+      id: webhookId,
+      type: `polar.${type}`,
+      created: parseInt(webhookTimestamp),
+      data: data as any,
+      is_raw: true,
+    });
 
-    const webhookHandlers: Partial<
-      Record<PolarEventLiteral, (data: any) => Array<WebhookEventPayload> | null>
-    > = {
-      /**
-       * Invoice
-       */
-      'order.paid': (data: PolarOrder) => {
-        const { status, metadata } = data;
+    // 3. Process Standard Mappings
+    const processStandard = (): Array<WebhookEventPayload<PolarRawEvents>> | null => {
+      switch (type) {
+        case 'order.paid': {
+          const polarOrder = data as PolarOrder;
+          const isSubscription = ['subscription_create', 'subscription_cycle'].includes(
+            polarOrder.billingReason,
+          );
 
-        if (status !== 'paid') {
-          return null;
+          return [
+            paykitEvent$InboundSchema<Payment>({
+              type: 'payment.updated',
+              created: parseInt(webhookTimestamp),
+              id: webhookId,
+              data: {
+                id: polarOrder.id,
+                amount: polarOrder.totalAmount,
+                currency: polarOrder.currency,
+                customer: polarOrder.customerId || {
+                  email: polarOrder.customer.email ?? '',
+                },
+                status: 'succeeded',
+                metadata: stringifyMetadataValues(polarOrder.metadata ?? {}),
+                item_id: polarOrder.product.id,
+                requires_action: false,
+                payment_url: null,
+              },
+            }),
+            paykitEvent$InboundSchema<Invoice>({
+              type: 'invoice.generated',
+              created: parseInt(webhookTimestamp),
+              id: webhookId,
+              data: paykitInvoice$InboundSchema({
+                ...polarOrder,
+                billingMode: billingModeSchema.parse(
+                  isSubscription ? 'recurring' : 'one_time',
+                ),
+                metadata: { ...(polarOrder.metadata ?? {}) },
+              }),
+            }),
+          ];
         }
 
-        const isSubscription = ['subscription_create', 'subscription_cycle'].includes(
-          data.billingReason,
-        );
-
-        const invoice = paykitInvoice$InboundSchema({
-          ...data,
-          billingMode: billingModeSchema.parse(isSubscription ? 'recurring' : 'one_time'),
-          metadata: { ...(metadata ?? {}) },
-        });
-
-        const payment: Payment = {
-          id: data.id,
-          amount: data.totalAmount,
-          currency: data.currency,
-          customer: data.customerId
-            ? data.customerId
-            : { email: data.customer.email ?? '' },
-          status: data.status === 'paid' ? 'succeeded' : 'pending',
-          metadata: stringifyMetadataValues(metadata ?? {}),
-          item_id: data.product.id,
-          requires_action: false,
-          payment_url: null,
-        };
-
-        // Consumable purchase
-        return [
-          paykitEvent$InboundSchema<Payment>({
-            type: 'payment.updated',
-            created: parseInt(webhookTimestamp),
-            id: webhookId,
-            data: payment,
-          }),
-          paykitEvent$InboundSchema<Invoice>({
-            type: 'invoice.generated',
-            created: parseInt(webhookTimestamp),
-            id: webhookId,
-            data: invoice,
-          }),
-        ];
-      },
-
-      'order.created': (data: PolarOrder) => {
-        const { billingReason, metadata, status } = data;
-
-        if (status !== 'paid') {
-          return null;
+        case 'order.created': {
+          const polarOrder = data as PolarOrder;
+          return [
+            paykitEvent$InboundSchema<Payment>({
+              type: 'payment.created',
+              created: parseInt(webhookTimestamp),
+              id: webhookId,
+              data: {
+                id: polarOrder.id,
+                amount: polarOrder.totalAmount,
+                currency: polarOrder.currency,
+                customer: polarOrder.customerId || {
+                  email: polarOrder.customer.email ?? '',
+                },
+                status: polarOrder.status === 'paid' ? 'succeeded' : 'pending',
+                metadata: stringifyMetadataValues(polarOrder.metadata ?? {}),
+                item_id: polarOrder.product.id,
+                requires_action: polarOrder.status !== 'paid',
+                payment_url: null,
+              },
+            }),
+          ];
         }
 
-        const payment: Payment = {
-          id: data.id,
-          amount: data.totalAmount,
-          currency: data.currency,
-          customer: data.customerId
-            ? data.customerId
-            : { email: data.customer.email ?? '' },
-          status: data.status === 'paid' ? 'succeeded' : 'pending',
-          metadata: stringifyMetadataValues(metadata ?? {}),
-          item_id: data.product.id,
-          requires_action: data.status === 'paid' ? false : true,
-          payment_url: null,
-        };
+        case 'customer.created':
+        case 'customer.updated':
+          return [
+            paykitEvent$InboundSchema<Customer>({
+              type: type === 'customer.created' ? 'customer.created' : 'customer.updated',
+              created: parseInt(webhookTimestamp),
+              id: webhookId,
+              data: paykitCustomer$InboundSchema(data as PolarCustomer),
+            }),
+          ];
 
-        return [
-          paykitEvent$InboundSchema<Payment>({
-            type: 'payment.created',
-            created: parseInt(webhookTimestamp),
-            id: webhookId,
-            data: payment,
-          }),
-        ];
-      },
+        case 'customer.deleted':
+          return [
+            paykitEvent$InboundSchema<null>({
+              type: 'customer.deleted',
+              created: parseInt(webhookTimestamp),
+              id: webhookId,
+              data: null,
+            }),
+          ];
 
-      /**
-       * Customer
-       */
-      'customer.created': (data: PolarCustomer) => {
-        const customer = paykitCustomer$InboundSchema(data);
+        case 'subscription.created':
+        case 'subscription.updated':
+          return [
+            paykitEvent$InboundSchema<Subscription>({
+              type:
+                type === 'subscription.created'
+                  ? 'subscription.created'
+                  : 'subscription.updated',
+              created: parseInt(webhookTimestamp),
+              id: webhookId,
+              data: paykitSubscription$InboundSchema(data as PolarSubscription),
+            }),
+          ];
 
-        return [
-          paykitEvent$InboundSchema<Customer>({
-            type: 'customer.created',
-            created: parseInt(webhookTimestamp),
-            id: webhookId,
-            data: customer,
-          }),
-        ];
-      },
+        case 'subscription.revoked':
+          return [
+            paykitEvent$InboundSchema<Subscription>({
+              type: 'subscription.canceled',
+              created: parseInt(webhookTimestamp),
+              id: webhookId,
+              data: paykitSubscription$InboundSchema(data as PolarSubscription),
+            }),
+          ];
 
-      'customer.updated': (data: PolarCustomer) => {
-        const customer = paykitCustomer$InboundSchema(data);
+        case 'refund.created':
+          return [
+            paykitEvent$InboundSchema<Refund>({
+              type: 'refund.created',
+              created: parseInt(webhookTimestamp),
+              id: webhookId,
+              data: paykitRefund$InboundSchema(data as PolarRefund),
+            }),
+          ];
 
-        return [
-          paykitEvent$InboundSchema<Customer>({
-            type: 'customer.updated',
-            created: parseInt(webhookTimestamp),
-            id: webhookId,
-            data: customer,
-          }),
-        ];
-      },
-
-      'customer.deleted': (data: PolarCustomer) => {
-        const customer = paykitCustomer$InboundSchema(data);
-
-        return [
-          paykitEvent$InboundSchema<Customer | null>({
-            type: 'customer.deleted',
-            created: parseInt(webhookTimestamp),
-            id: webhookId,
-            data: customer,
-          }),
-        ];
-      },
-
-      /**
-       * Subscription
-       */
-      'subscription.updated': (data: PolarSubscription) => {
-        const subscription = paykitSubscription$InboundSchema(data);
-
-        return [
-          paykitEvent$InboundSchema<Subscription>({
-            type: 'subscription.updated',
-            created: parseInt(webhookTimestamp),
-            id: webhookId,
-            data: subscription,
-          }),
-        ];
-      },
-
-      'subscription.created': (data: PolarSubscription) => {
-        const subscription = paykitSubscription$InboundSchema(data);
-
-        return [
-          paykitEvent$InboundSchema<Subscription>({
-            type: 'subscription.created',
-            created: parseInt(webhookTimestamp),
-            id: webhookId,
-            data: subscription,
-          }),
-        ];
-      },
-
-      'subscription.revoked': (data: PolarSubscription) => {
-        const subscription = paykitSubscription$InboundSchema(data);
-
-        return [
-          paykitEvent$InboundSchema<Subscription>({
-            type: 'subscription.canceled',
-            created: parseInt(webhookTimestamp),
-            id: webhookId,
-            data: subscription,
-          }),
-        ];
-      },
-
-      'refund.created': (data: PolarRefund) => {
-        const refund = paykitRefund$InboundSchema(data);
-
-        return [
-          paykitEvent$InboundSchema<Refund>({
-            type: 'refund.created',
-            created: parseInt(webhookTimestamp),
-            id: webhookId,
-            data: refund,
-          }),
-        ];
-      },
+        default:
+          return null;
+      }
     };
 
-    const handler = webhookHandlers[type as PolarEventLiteral];
-
-    if (!handler)
-      throw new Error(`Unhandled event type: ${type} for provider: ${this.providerName}`);
-
-    const results = handler(data);
-
-    if (!results) {
-      console.log(
-        `Skipping event ${type} for provider: ${this.providerName} as no action needed`,
-      );
-
-      return [];
-    }
+    const standardMapped = processStandard();
+    if (standardMapped) results.push(...standardMapped);
 
     return results;
   };
