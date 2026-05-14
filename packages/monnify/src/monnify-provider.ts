@@ -261,23 +261,14 @@ export class MonnifyProvider extends AbstractPayKitProvider implements PayKitPro
   };
 
   createCustomer = async (params: CreateCustomerParams): Promise<Customer> => {
-    if (this.cloudClient) {
-      return this.cloudClient.customers.create(params);
-    }
-
     throw new ProviderNotSupportedError('createCustomer', 'Moniepoint', {
-      reason:
-        'Moniepoint does not support creating customers, use the cloud API instead by setting `cloudApiKey` in the options to create a customer in the cloud',
+      reason: "Moniepoint doesn't support creating customers",
     });
   };
 
   retrieveCustomer = async (id: string): Promise<Customer | null> => {
-    if (this.cloudClient) {
-      return this.cloudClient.customers.retrieve(id, id);
-    }
-
     throw new ProviderNotSupportedError('retrieveCustomer', 'Moniepoint', {
-      reason: 'Moniepoint does not support retrieving customers',
+      reason: "Moniepoint doesn't support retrieving customers",
       alternative: 'Use the retrieveCustomer method instead',
     });
   };
@@ -286,23 +277,15 @@ export class MonnifyProvider extends AbstractPayKitProvider implements PayKitPro
     id: string,
     params: UpdateCustomerParams,
   ): Promise<Customer> => {
-    if (this.cloudClient) {
-      await this.cloudClient.customers.update(id, params, id);
-    }
-
     throw new ProviderNotSupportedError('updateCustomer', 'Moniepoint', {
-      reason: 'Moniepoint does not support updating customers',
+      reason: "Moniepoint doesn't support updating customers",
       alternative: 'Use the updateCustomer method instead',
     });
   };
 
   deleteCustomer = async (id: string): Promise<null> => {
-    if (this.cloudClient) {
-      await this.cloudClient.customers.delete(id, id);
-    }
-
     throw new ProviderNotSupportedError('deleteCustomer', 'Moniepoint', {
-      reason: 'Moniepoint does not support deleting customers',
+      reason: "Moniepoint doesn't support deleting customers",
       alternative: 'Use the deleteCustomer method instead',
     });
   };
@@ -311,7 +294,7 @@ export class MonnifyProvider extends AbstractPayKitProvider implements PayKitPro
     params: CreateSubscriptionSchema,
   ): Promise<Subscription> => {
     throw new ProviderNotSupportedError('createSubscription', 'Moniepoint', {
-      reason: 'Moniepoint does not support creating subscriptions',
+      reason: "Moniepoint doesn't support creating subscriptions",
       alternative: 'Use the createSubscription method instead',
     });
   };
@@ -321,35 +304,35 @@ export class MonnifyProvider extends AbstractPayKitProvider implements PayKitPro
     params: UpdateSubscriptionSchema,
   ): Promise<Subscription> => {
     throw new ProviderNotSupportedError('updateSubscription', 'Moniepoint', {
-      reason: 'Moniepoint does not support updating subscriptions',
+      reason: "Moniepoint doesn't support updating subscriptions",
       alternative: 'Use the updateSubscription method instead',
     });
   };
 
   cancelSubscription = async (id: string): Promise<Subscription> => {
     throw new ProviderNotSupportedError('cancelSubscription', 'Moniepoint', {
-      reason: 'Moniepoint does not support canceling subscriptions',
+      reason: "Moniepoint doesn't support canceling subscriptions",
       alternative: 'Use the cancelSubscription method instead',
     });
   };
 
   deleteSubscription = async (id: string): Promise<null> => {
     throw new ProviderNotSupportedError('deleteSubscription', 'Moniepoint', {
-      reason: 'Moniepoint does not support deleting subscriptions',
+      reason: "Moniepoint doesn't support deleting subscriptions",
       alternative: 'Use the deleteSubscription method instead',
     });
   };
 
   retrieveSubscription = async (id: string): Promise<Subscription | null> => {
     throw new ProviderNotSupportedError('retrieveSubscription', 'Moniepoint', {
-      reason: 'Moniepoint does not support retrieving subscriptions',
+      reason: "Moniepoint doesn't support retrieving subscriptions",
       alternative: 'Use the retrieveSubscription method instead',
     });
   };
 
   createPayment = async (params: CreatePaymentSchema): Promise<Payment> => {
     throw new ProviderNotSupportedError('createPayment', 'Moniepoint', {
-      reason: 'Moniepoint does not support creating payments',
+      reason: "Moniepoint doesn't support creating payments",
       alternative: 'Use the createPayment method instead',
     });
   };
@@ -365,28 +348,28 @@ export class MonnifyProvider extends AbstractPayKitProvider implements PayKitPro
 
   updatePayment = async (id: string, params: UpdatePaymentSchema): Promise<Payment> => {
     throw new ProviderNotSupportedError('updatePayment', 'Moniepoint', {
-      reason: 'Moniepoint does not support updating payments',
+      reason: "Moniepoint doesn't support updating payments",
       alternative: 'Use the updatePayment method instead',
     });
   };
 
   deletePayment = async (id: string): Promise<null> => {
     throw new ProviderNotSupportedError('deletePayment', 'Moniepoint', {
-      reason: 'Moniepoint does not support deleting payments',
+      reason: "Moniepoint doesn't support deleting payments",
       alternative: 'Use the deletePayment method instead',
     });
   };
 
   capturePayment = async (id: string, params: CapturePaymentSchema): Promise<Payment> => {
     throw new ProviderNotSupportedError('capturePayment', 'Moniepoint', {
-      reason: 'Moniepoint does not support capturing payments',
+      reason: "Moniepoint doesn't support capturing payments",
       alternative: 'Use the capturePayment method instead',
     });
   };
 
   cancelPayment = async (id: string): Promise<Payment> => {
     throw new ProviderNotSupportedError('cancelPayment', 'Moniepoint', {
-      reason: 'Moniepoint does not support canceling payments',
+      reason: "Moniepoint doesn't support canceling payments",
       alternative: 'Use the cancelPayment method instead',
     });
   };
@@ -434,7 +417,7 @@ export class MonnifyProvider extends AbstractPayKitProvider implements PayKitPro
     const receivedHash = headers.get('monnify-signature');
 
     if (!receivedHash) {
-      throw new WebhookError('Missing Moniepoint signature', {
+      throw new WebhookError('Missing Monnify signature', {
         provider: this.providerName,
       });
     }
@@ -442,7 +425,7 @@ export class MonnifyProvider extends AbstractPayKitProvider implements PayKitPro
     const computedHash = sha512.hmac(webhookSecret, JSON.stringify(body));
 
     if (computedHash !== receivedHash)
-      throw new WebhookError('Invalid Moniepoint signature', {
+      throw new WebhookError('Invalid Monnify signature', {
         provider: this.providerName,
       });
 

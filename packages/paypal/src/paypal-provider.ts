@@ -243,13 +243,8 @@ export class PayPalProvider extends AbstractPayKitProvider implements PayKitProv
   };
 
   createCustomer = async (params: CreateCustomerParams): Promise<Customer> => {
-    if (this.cloudClient) {
-      return this.cloudClient.customers.create(params);
-    }
-
     throw new ProviderNotSupportedError('createCustomer', this.providerName, {
-      reason:
-        'PayPal does not support creating customers, use the cloud API instead by setting `cloudApiKey` in the options',
+      reason: 'PayPal does not support creating customers',
       alternative: 'Use Payer information within orders or implement PayPal Vault API',
     });
   };
@@ -258,36 +253,20 @@ export class PayPalProvider extends AbstractPayKitProvider implements PayKitProv
     id: string,
     params: UpdateCustomerParams,
   ): Promise<Customer> => {
-    if (this.cloudClient) {
-      return this.cloudClient.customers.update(id, params);
-    }
-
     throw new ProviderNotSupportedError('updateCustomer', this.providerName, {
-      reason:
-        'PayPal does not support standalone customer management, use the cloud API instead by setting `cloudApiKey` in the options',
+      reason: 'PayPal does not support standalone customer management',
     });
   };
 
   deleteCustomer = async (id: string): Promise<null> => {
-    if (this.cloudClient) {
-      await this.cloudClient.customers.delete(id);
-      return null;
-    }
-
     throw new ProviderNotSupportedError('deleteCustomer', this.providerName, {
-      reason:
-        'PayPal does not support deleting customers, use the cloud API instead by setting `cloudApiKey` in the options',
+      reason: 'PayPal does not support deleting customers',
     });
   };
 
   retrieveCustomer = async (id: string): Promise<Customer | null> => {
-    if (this.cloudClient) {
-      return this.cloudClient.customers.retrieve(id);
-    }
-
     throw new ProviderNotSupportedError('retrieveCustomer', this.providerName, {
-      reason:
-        'PayPal does not support retrieving customers, use the cloud API instead by setting `cloudApiKey` in the options',
+      reason: 'PayPal does not support retrieving customers',
     });
   };
 

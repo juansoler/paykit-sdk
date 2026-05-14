@@ -228,8 +228,6 @@ export class PolarProvider extends AbstractPayKitProvider implements PayKitProvi
       },
     });
 
-    if (this.cloudClient) void this.cloudClient.customers.create(params, response.id);
-
     return paykitCustomer$InboundSchema(response);
   };
 
@@ -245,8 +243,6 @@ export class PolarProvider extends AbstractPayKitProvider implements PayKitProvi
 
     const { email, name, metadata, provider_metadata } = data;
 
-    if (this.cloudClient) void this.cloudClient.customers.update(id, params);
-
     const response = await this.polar.customers.update({
       id,
       customerUpdate: {
@@ -256,8 +252,6 @@ export class PolarProvider extends AbstractPayKitProvider implements PayKitProvi
         ...provider_metadata,
       },
     });
-
-    if (this.cloudClient) void this.cloudClient.customers.update(id, params, id);
 
     return paykitCustomer$InboundSchema(response);
   };
@@ -278,11 +272,6 @@ export class PolarProvider extends AbstractPayKitProvider implements PayKitProvi
     const customer = await this.polar.customers.get({ id });
 
     if (customer) await this.polar.customers.delete({ id });
-
-    if (this.cloudClient) {
-      const customers = await this.cloudClient.customers.query({ email: customer.email });
-      if (customers.length > 0) await this.cloudClient.customers.delete(customers[0].id);
-    }
 
     return null;
   };

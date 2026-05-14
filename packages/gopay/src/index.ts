@@ -13,9 +13,8 @@ export const gopay = () => {
       'GOPAY_GO_ID',
       'GOPAY_SANDBOX',
       'GOPAY_WEBHOOK_URL',
-      'PAYKIT_CLOUD_API_KEY',
     ],
-    (process.env as Record<string, string>) ?? { PAYKIT_CLOUD_API_KEY: '' },
+    (process.env as Record<string, string>) ?? {},
     'Missing required environment variables: {keys}',
   );
 
@@ -25,7 +24,6 @@ export const gopay = () => {
     goId: envVars.GOPAY_GO_ID,
     isSandbox: envVars.GOPAY_SANDBOX === 'true',
     webhookUrl: envVars.GOPAY_WEBHOOK_URL,
-    cloudApiKey: envVars.PAYKIT_CLOUD_API_KEY,
     debug: true,
   });
 };
