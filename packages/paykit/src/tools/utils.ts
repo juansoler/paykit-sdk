@@ -11,7 +11,9 @@ export const OK = <V>(value: V): Result<V, never> => ({ ok: true, value });
 
 export const ERR = <E>(error: E): Result<never, E> => ({ ok: false, error });
 
-export const unwrapAsync = async <T>(pr: Promise<Result<T, unknown>>): Promise<T> => {
+export const unwrapAsync = async <T>(
+  pr: Promise<Result<T, unknown>>,
+): Promise<T> => {
   const r = await pr;
 
   if (!r.ok) throw r.error;
@@ -49,7 +51,10 @@ export const safeDecode = <T>(value: string) => {
 
 export async function executeWithRetryWithHandler<T>(
   apiCall: () => Promise<T>,
-  errorHandler: (error: any, attempt: number) => { retry: boolean; data: unknown },
+  errorHandler: (
+    error: any,
+    attempt: number,
+  ) => { retry: boolean; data: unknown },
   maxRetries: number = 3,
   baseDelay: number = 1000,
   currentAttempt: number = 1,
@@ -63,7 +68,9 @@ export async function executeWithRetryWithHandler<T>(
 
     if (handledError.retry && currentAttempt <= maxRetries) {
       const delay =
-        baseDelay * Math.pow(2, currentAttempt - 1) * (0.5 + Math.random() * 0.5);
+        baseDelay *
+        Math.pow(2, currentAttempt - 1) *
+        (0.5 + Math.random() * 0.5);
 
       await setTimeout(delay);
 
@@ -119,9 +126,13 @@ export const validateRequiredKeys = <K extends string>(
   return result as Record<K, string>;
 };
 
-export const parseJSON = <T>(str: string, schema: z.ZodSchema<T>): T => {
-  const parsed = JSON.parse(str);
-  return schema.parse(parsed);
+export const parseJSON = <T>(str: string, schema: z.ZodSchema<T>): T | null => {
+  try {
+    const parsed = JSON.parse(str);
+    return schema.parse(parsed);
+  } catch (error) {
+    return null;
+  }
 };
 
 /**

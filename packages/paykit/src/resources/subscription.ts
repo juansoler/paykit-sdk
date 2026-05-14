@@ -3,7 +3,20 @@ import { schema } from '../tools';
 import { Payee, payeeSchema } from './customer';
 import { metadataSchema, PaykitMetadata } from './metadata';
 
-export const subscriptionBillingIntervalSchema = z.enum(['day', 'week', 'month', 'year']);
+export const subscriptionIntervalUnitSchema = z.enum([
+  'day',
+  'week',
+  'month',
+  'year',
+]);
+
+export const subscriptionBillingIntervalSchema = z.union([
+  subscriptionIntervalUnitSchema,
+  z.object({
+    type: z.literal('custom'),
+    durationMs: z.number().int().positive(),
+  }),
+]);
 
 export type SubscriptionBillingInterval = z.infer<
   typeof subscriptionBillingIntervalSchema
@@ -104,7 +117,9 @@ export const subscriptionSchema = schema<Subscription>()(
   }),
 );
 
-export interface UpdateSubscriptionSchema<TProviderMetadata = Record<string, unknown>> {
+export interface UpdateSubscriptionSchema<
+  TProviderMetadata = Record<string, unknown>,
+> {
   /**
    * The metadata of the subscription.
    */
@@ -149,8 +164,9 @@ export const deleteSubscriptionSchema = schema<DeleteSubscriptionSchema>()(
   }),
 );
 
-export interface CreateSubscriptionSchema<TProviderMetadata = Record<string, unknown>>
-  extends Omit<
+export interface CreateSubscriptionSchema<
+  TProviderMetadata = Record<string, unknown>,
+> extends Omit<
     Subscription,
     | 'id'
     | 'status'

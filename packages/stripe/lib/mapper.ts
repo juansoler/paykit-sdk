@@ -10,7 +10,6 @@ import {
   PAYKIT_METADATA_KEY,
   PaymentStatus,
   Refund,
-  RefundReason,
   Subscription,
   SubscriptionBillingInterval,
 } from '@paykit-sdk/core';
@@ -23,7 +22,10 @@ import Stripe from 'stripe';
 export const paykitCheckout$InboundSchema = (
   checkout: Stripe.Checkout.Session,
   lineItems: Array<
-    OverrideProps<Pick<Stripe.LineItem, 'id' | 'quantity'>, { quantity: number }>
+    OverrideProps<
+      Pick<Stripe.LineItem, 'id' | 'quantity'>,
+      { quantity: number }
+    >
   >,
 ): Checkout => {
   let customer: Payee | null = null;
@@ -51,7 +53,9 @@ export const paykitCheckout$InboundSchema = (
 /**
  * Customer
  */
-export const paykitCustomer$InboundSchema = (customer: Stripe.Customer): Customer => {
+export const paykitCustomer$InboundSchema = (
+  customer: Stripe.Customer,
+): Customer => {
   return {
     id: customer.id,
     email: customer.email ?? '',
@@ -80,7 +84,11 @@ export const paykitSubscription$InboundSchema = (
 ): Subscription => {
   const status = ((): Subscription['status'] => {
     if (['active', 'trialing'].includes(subscription.status)) return 'active';
-    if (['incomplete_expired', 'incomplete', 'past_due'].includes(subscription.status)) {
+    if (
+      ['incomplete_expired', 'incomplete', 'past_due'].includes(
+        subscription.status,
+      )
+    ) {
       return 'past_due';
     }
     if (['canceled'].includes(subscription.status)) return 'canceled';
@@ -118,10 +126,16 @@ export const paykitSubscription$InboundSchema = (
  */
 type InvoicePayload = Stripe.Invoice & { billingMode: BillingMode };
 
-export const paykitInvoice$InboundSchema = (invoice: InvoicePayload): Invoice => {
+export const paykitInvoice$InboundSchema = (
+  invoice: InvoicePayload,
+): Invoice => {
   const status = ((): InvoiceStatus => {
     if (invoice.status == 'paid') return 'paid';
-    if (['draft', 'open', 'uncollectible', 'void'].includes(invoice.status as string))
+    if (
+      ['draft', 'open', 'uncollectible', 'void'].includes(
+        invoice.status as string,
+      )
+    )
       return 'open';
     throw new Error(`Unknown status: ${invoice.status}`);
   })();
@@ -161,7 +175,9 @@ export const paykitInvoice$InboundSchema = (invoice: InvoicePayload): Invoice =>
 /**
  * Payment
  */
-const stripeToPaykitStatus = (status: Stripe.PaymentIntent.Status): PaymentStatus => {
+const stripeToPaykitStatus = (
+  status: Stripe.PaymentIntent.Status,
+): PaymentStatus => {
   switch (status) {
     case 'requires_payment_method':
     case 'requires_confirmation':
@@ -181,8 +197,12 @@ const stripeToPaykitStatus = (status: Stripe.PaymentIntent.Status): PaymentStatu
   }
 };
 
-export const paykitPayment$InboundSchema = (intent: Stripe.PaymentIntent): Payment => {
-  const itemId = JSON.parse(intent.metadata?.[PAYKIT_METADATA_KEY] ?? '{}').itemId;
+export const paykitPayment$InboundSchema = (
+  intent: Stripe.PaymentIntent,
+): Payment => {
+  const itemId = JSON.parse(
+    intent.metadata?.[PAYKIT_METADATA_KEY] ?? '{}',
+  ).itemId;
 
   return {
     id: intent.id,
@@ -193,7 +213,8 @@ export const paykitPayment$InboundSchema = (intent: Stripe.PaymentIntent): Payme
     metadata: omitInternalMetadata(intent.metadata ?? {}),
     item_id: itemId,
     requires_action:
-      intent.status === 'requires_action' || intent.status === 'requires_confirmation',
+      intent.status === 'requires_action' ||
+      intent.status === 'requires_confirmation',
     payment_url: intent.next_action?.redirect_to_url?.url ?? null,
   };
 };

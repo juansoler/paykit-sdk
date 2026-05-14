@@ -138,8 +138,9 @@ export const createCheckoutBaseSchema = schema<CreateCheckoutBaseSchema>()(
   }),
 );
 
-export interface CreateOneTimeCheckoutSchema<TProviderMetadata = Record<string, unknown>>
-  extends CreateCheckoutBaseSchema<TProviderMetadata> {
+export interface CreateOneTimeCheckoutSchema<
+  TProviderMetadata = Record<string, unknown>,
+> extends CreateCheckoutBaseSchema<TProviderMetadata> {
   /**
    * The session type of the checkout.
    */
@@ -187,9 +188,8 @@ export const createCheckoutSchema = schema<CreateCheckoutSchema>()(
   }),
 );
 
-export type UpdateCheckoutSchema<TProviderMetadata = Record<string, unknown>> = Partial<
-  CreateCheckoutSchema<TProviderMetadata>
->;
+export type UpdateCheckoutSchema<TProviderMetadata = Record<string, unknown>> =
+  Partial<CreateCheckoutSchema<TProviderMetadata>>;
 
 export const updateCheckoutSchema = schema<UpdateCheckoutSchema>()(
   createCheckoutSchema.partial(),

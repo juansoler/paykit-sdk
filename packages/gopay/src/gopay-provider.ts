@@ -57,7 +57,11 @@ import {
   paykitSubscription$InboundSchema,
 } from './utils/mapper';
 
-interface GoPayMetadata extends ProviderMetadataRegistry {}
+interface GoPayMetadata extends ProviderMetadataRegistry {
+  subscription: {
+    success_url: string;
+  };
+}
 
 interface GoPayRawEvents extends Record<string, any> {}
 
@@ -151,13 +155,19 @@ export class GoPayProvider
   createCheckout = async (params: CreateCheckoutSchema): Promise<Checkout> => {
     const { error, data } = createCheckoutSchema.safeParse(params);
 
-    if (error) throw ValidationError.fromZodError(error, 'gopay', 'createCheckout');
+    if (error)
+      throw ValidationError.fromZodError(error, 'gopay', 'createCheckout');
 
     if (!isEmailCustomer(data.customer)) {
-      throw new InvalidTypeError('customer', 'object (customer) with email', 'string', {
-        provider: this.providerName,
-        method: 'createCheckout',
-      });
+      throw new InvalidTypeError(
+        'customer',
+        'object (customer) with email',
+        'string',
+        {
+          provider: this.providerName,
+          method: 'createCheckout',
+        },
+      );
     }
 
     const { amount, currency = 'CZK' } = validateRequiredKeys(
@@ -202,7 +212,10 @@ export class GoPayProvider
       lang: data.provider_metadata?.language
         ? (data.provider_metadata.language as string)
         : 'EN',
-      callback: { return_url: data.success_url, notification_url: this.opts.webhookUrl },
+      callback: {
+        return_url: data.success_url,
+        notification_url: this.opts.webhookUrl,
+      },
       additional_params: Object.entries({
         ...data.metadata,
         [PAYKIT_METADATA_KEY]: JSON.stringify({
@@ -303,79 +316,136 @@ export class GoPayProvider
   };
 
   createSubscription = async (
-    params: CreateSubscriptionSchema,
+    params: CreateSubscriptionSchema<GoPayMetadata['subscription']>,
   ): Promise<Subscription> => {
     const { error, data } = createSubscriptionSchema.safeParse(params);
 
-    if (error) throw ValidationError.fromZodError(error, 'gopay', 'createSubscription');
+    if (error)
+      throw ValidationError.fromZodError(error, 'gopay', 'createSubscription');
 
+    // Customer must be an object with email
     if (
-      typeof data.customer == 'string' ||
+      typeof data.customer === 'string' ||
       (typeof data.customer === 'object' && !data.customer.email)
     ) {
-      throw new InvalidTypeError('customer', 'object (customer) with email', 'string', {
-        provider: this.providerName,
-        method: 'createCheckout',
-      });
+      throw new InvalidTypeError(
+        'customer',
+        'object (customer) with email',
+        'string',
+        {
+          provider: this.providerName,
+          method: 'createSubscription',
+        },
+      );
     }
 
     const { success_url } = validateRequiredKeys(
       ['success_url'],
       data.provider_metadata as Record<string, string>,
-      'The following fields must be present in the provider_metadata of createCheckout: {keys}',
+      'The following fields must be present in the provider_metadata of createSubscription: {keys}',
     );
 
-    if (this.opts.debug) {
-      if (data.billing_interval === 'year') {
-        console.info(
-          'GoPay does not support yearly subscriptions, the available options are `day`, `week`, `month` and `ON_DEMAND` \n raise an issue at https://github.com/usepaykit/paykit-sdk/issues if you need this feature',
-        );
-      }
+    // ─── Resolve billing_interval → GoPay recurrence_cycle ──────────────────
+    // GoPay only supports: DAY, WEEK, MONTH, ON_DEMAND
+    // `year` has no native equivalent → ON_DEMAND (merchant triggers charges manually)
+    // `custom` ({ type: 'custom', durationMs }) → ON_DEMAND (same reason)
+    // For ON_DEMAND: recurrence_period MUST NOT be sent (per GoPay docs)
 
-      if (!data.provider_metadata?.description) {
-        console.info(
-          `No description provided for the subscription \`provider_metadata.description\`, using default description \`Subscription by ${data.customer.email}\``,
-        );
-      }
-    }
+    const billingInterval = data.billing_interval;
+    const isCustom =
+      typeof billingInterval === 'object' && billingInterval.type === 'custom';
+    const isYear = billingInterval === 'year';
+    const isOnDemand = isCustom || isYear;
 
-    const intervalMap: Record<
-      Subscription['billing_interval'],
-      'DAY' | 'WEEK' | 'MONTH' | 'ON_DEMAND'
-    > = {
+    type GoPayCycle = 'DAY' | 'WEEK' | 'MONTH' | 'ON_DEMAND';
+
+    const intervalMap: Record<'day' | 'week' | 'month' | 'year', GoPayCycle> = {
       day: 'DAY',
       week: 'WEEK',
       month: 'MONTH',
       year: 'ON_DEMAND',
-    } as const;
+    };
 
-    const recurrenceCycle = intervalMap?.[data.billing_interval] ?? 'ON_DEMAND';
+    const recurrenceCycle: GoPayCycle = isCustom
+      ? 'ON_DEMAND'
+      : intervalMap[billingInterval as 'day' | 'week' | 'month' | 'year'];
 
-    const currentPeriodEnd = (() => {
-      if (recurrenceCycle === 'DAY') {
-        return new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString();
-      }
-
-      if (recurrenceCycle === 'WEEK') {
-        return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-      }
-
-      if (recurrenceCycle === 'MONTH') {
-        return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-      }
-
-      if (recurrenceCycle === 'ON_DEMAND') {
-        throw new ConfigurationError(
-          'ON_DEMAND subscriptions is not yet implemented by PayKit, please open an issue at https://github.com/usepaykit/paykit-sdk/issues',
-          {
-            provider: this.providerName,
-          },
+    if (this.opts.debug) {
+      if (isYear) {
+        console.info(
+          '[PayKit/GoPay] GoPay does not support yearly recurrence. Falling back to ON_DEMAND — ' +
+            'you must trigger each charge manually via createRecurrence(parentPaymentId, ...). ' +
+            'See: https://doc.gopay.com/#recurring-on-demand',
         );
       }
+      if (isCustom) {
+        const durationMs = (
+          billingInterval as { type: 'custom'; durationMs: number }
+        ).durationMs;
+        console.info(
+          `[PayKit/GoPay] Custom interval (${durationMs}ms) is not supported by GoPay. ` +
+            'Falling back to ON_DEMAND — trigger charges manually via createRecurrence(parentPaymentId, ...). ' +
+            'See: https://doc.gopay.com/#recurring-on-demand',
+        );
+      }
+      if (!data.provider_metadata?.description) {
+        console.info(
+          `[PayKit/GoPay] No \`provider_metadata.description\` provided. ` +
+            `Using default: "Subscription by ${data.customer.email}"`,
+        );
+      }
+    }
 
-      throw new Error('Invalid billing interval: ' + data.billing_interval);
+    const toDateString = (ms: number): string => {
+      const d = new Date(ms);
+      return d.toISOString().split('T')[0];
+    };
+
+    const GOPAY_MAX_DATE = '2099-12-30';
+
+    const recurrenceDateTo = (() => {
+      if (recurrenceCycle === 'DAY') {
+        return toDateString(Date.now() + 1 * 24 * 60 * 60 * 1000);
+      }
+      if (recurrenceCycle === 'WEEK') {
+        return toDateString(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      }
+      if (recurrenceCycle === 'MONTH') {
+        return toDateString(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      }
+      if (recurrenceCycle === 'ON_DEMAND') {
+        if (isCustom) {
+          const durationMs = (
+            billingInterval as { type: 'custom'; durationMs: number }
+          ).durationMs;
+          const candidateDate = toDateString(Date.now() + durationMs);
+          return candidateDate < GOPAY_MAX_DATE
+            ? candidateDate
+            : GOPAY_MAX_DATE;
+        }
+        // year → give a generous 5-year authorization window
+        return toDateString(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000);
+      }
+      throw new Error(
+        `[PayKit/GoPay] Unhandled recurrence cycle: ${recurrenceCycle}`,
+      );
     })();
 
+    // ─── Build recurrence object ─────────────────────────────────────────────
+    // IMPORTANT: recurrence_period MUST NOT be sent for ON_DEMAND (per GoPay docs)
+    const recurrence = isOnDemand
+      ? {
+          recurrence_cycle: recurrenceCycle,
+          recurrence_date_to: recurrenceDateTo,
+          // recurrence_period intentionally omitted for ON_DEMAND
+        }
+      : {
+          recurrence_cycle: recurrenceCycle,
+          recurrence_period: data.quantity ?? 1,
+          recurrence_date_to: recurrenceDateTo,
+        };
+
+    // ─── Build full payment request ──────────────────────────────────────────
     const goPaySubscriptionOptions: GoPayPaymentRequest = {
       payer: {
         allowed_payment_instruments: ['PAYMENT_CARD'],
@@ -388,24 +458,30 @@ export class GoPayProvider
       order_number: crypto.randomBytes(8).toString('hex').slice(0, 15),
       order_description: data.provider_metadata?.description
         ? (data.provider_metadata.description as string)
-        : 'Subscription by ' + data.customer.email,
-      items: [{ name: data.item_id, amount: Number(data.amount), count: data.quantity }],
-      recurrence: {
-        recurrence_cycle: recurrenceCycle,
-        recurrence_period: data.quantity,
-        recurrence_date_to: currentPeriodEnd,
+        : `Subscription by ${data.customer.email}`,
+      items: [
+        {
+          name: data.item_id,
+          amount: Number(data.amount),
+          count: data.quantity ?? 1,
+        },
+      ],
+      recurrence,
+      callback: {
+        return_url: success_url,
+        notification_url: this.opts.webhookUrl,
       },
-      callback: { return_url: success_url, notification_url: this.opts.webhookUrl },
       additional_params: Object.entries({
         ...data.metadata,
         [PAYKIT_METADATA_KEY]: JSON.stringify({
           item: data.item_id,
           qty: data.quantity,
+          // Store the original interval so createRecurrence callers know the intended cadence
+          billing_interval: isCustom
+            ? `custom:${(billingInterval as { type: 'custom'; durationMs: number }).durationMs}ms`
+            : billingInterval,
         }),
-      }).map(([name, value]) => ({
-        name,
-        value: String(value),
-      })),
+      }).map(([name, value]) => ({ name, value: String(value) })),
     };
 
     const response = await this._client.post<GoPaySubscriptionResponse>(
@@ -418,7 +494,9 @@ export class GoPayProvider
 
     if (!response.ok) {
       throw new OperationFailedError('createSubscription', this.providerName, {
-        cause: new Error('Failed to create subscription'),
+        cause: new Error(
+          `[PayKit/GoPay] Failed to create subscription. Error: ${response.error}`,
+        ),
       });
     }
 
@@ -432,10 +510,15 @@ export class GoPayProvider
     const subscription = await this.retrieveSubscription(id);
 
     if (!subscription) {
-      throw new ProviderNotSupportedError('updateSubscription', this.providerName, {
-        reason: "Gopay doesn't support updating subscriptions",
-        alternative: 'Use the payment API instead and update the subscription manually',
-      });
+      throw new ProviderNotSupportedError(
+        'updateSubscription',
+        this.providerName,
+        {
+          reason: "Gopay doesn't support updating subscriptions",
+          alternative:
+            'Use the payment API instead and update the subscription manually',
+        },
+      );
     }
 
     return subscription;
@@ -480,9 +563,13 @@ export class GoPayProvider
     );
 
     if (!response.ok) {
-      throw new OperationFailedError('retrieveSubscription', this.providerName, {
-        cause: new Error('Failed to retrieve subscription'),
-      });
+      throw new OperationFailedError(
+        'retrieveSubscription',
+        this.providerName,
+        {
+          cause: new Error('Failed to retrieve subscription'),
+        },
+      );
     }
 
     return paykitSubscription$InboundSchema(response.value);
@@ -492,16 +579,25 @@ export class GoPayProvider
     const { error, data } = createPaymentSchema.safeParse(params);
 
     if (error)
-      throw ValidationError.fromZodError(error, this.providerName, 'createPayment');
+      throw ValidationError.fromZodError(
+        error,
+        this.providerName,
+        'createPayment',
+      );
 
     if (
       typeof data.customer == 'string' ||
       (typeof data.customer === 'object' && !data.customer?.email)
     ) {
-      throw new InvalidTypeError('customer', 'object (customer) with email', 'string', {
-        provider: this.providerName,
-        method: 'createPayment',
-      });
+      throw new InvalidTypeError(
+        'customer',
+        'object (customer) with email',
+        'string',
+        {
+          provider: this.providerName,
+          method: 'createPayment',
+        },
+      );
     }
 
     if (!data.item_id) {
@@ -580,7 +676,10 @@ export class GoPayProvider
     });
   };
 
-  capturePayment = async (id: string, params: CapturePaymentSchema): Promise<Payment> => {
+  capturePayment = async (
+    id: string,
+    params: CapturePaymentSchema,
+  ): Promise<Payment> => {
     const payment = await this._client.get<GoPayPaymentBaseResponse>(
       `/payments/payment/${id}/capture`,
       { headers: await this.tokenManager.getAuthHeaders() },
@@ -594,8 +693,9 @@ export class GoPayProvider
 
     const { item, qty } = JSON.parse(
       decodeHtmlEntities(
-        payment.value.additional_params?.find(param => param.name === PAYKIT_METADATA_KEY)
-          ?.value ?? '{}',
+        payment.value.additional_params?.find(
+          param => param.name === PAYKIT_METADATA_KEY,
+        )?.value ?? '{}',
       ),
     );
 
@@ -610,13 +710,13 @@ export class GoPayProvider
       items: [{ name: item, amount: params.amount, count: qty }],
     };
 
-    await this._client.post<{ id: number; result: LooseAutoComplete<'FINISHED'> }>(
-      `/payments/payment/${id}/capture`,
-      {
-        body: JSON.stringify(captureBody),
-        headers: await this.tokenManager.getAuthHeaders(),
-      },
-    );
+    await this._client.post<{
+      id: number;
+      result: LooseAutoComplete<'FINISHED'>;
+    }>(`/payments/payment/${id}/capture`, {
+      body: JSON.stringify(captureBody),
+      headers: await this.tokenManager.getAuthHeaders(),
+    });
 
     return paykitPayment$InboundSchema(payment.value);
   };
@@ -641,7 +741,10 @@ export class GoPayProvider
   /**
    * Update payment - not supported by GoPay
    */
-  updatePayment = async (id: string, params: UpdatePaymentSchema): Promise<Payment> => {
+  updatePayment = async (
+    id: string,
+    params: UpdatePaymentSchema,
+  ): Promise<Payment> => {
     console.info("Gopay doesn't support updating payments");
 
     const existing = await this.retrievePayment(id);
@@ -659,7 +762,11 @@ export class GoPayProvider
     const { error, data } = createRefundSchema.safeParse(params);
 
     if (error) {
-      throw ValidationError.fromZodError(error, this.providerName, 'createRefund');
+      throw ValidationError.fromZodError(
+        error,
+        this.providerName,
+        'createRefund',
+      );
     }
 
     const payment = await this.retrievePayment(data.payment_id);
@@ -706,7 +813,9 @@ export class GoPayProvider
     const parentId = new URL(fullUrl).searchParams.get('parent_id'); // For recurring payments i.e subscriptions
 
     if (!paymentId) {
-      throw new WebhookError('Payment ID is required', { provider: this.providerName });
+      throw new WebhookError('Payment ID is required', {
+        provider: this.providerName,
+      });
     }
 
     if (this.opts.debug) {
@@ -714,12 +823,15 @@ export class GoPayProvider
     }
 
     const [payment, error] = await tryCatchAsync(
-      this._client.get<GoPayPaymentBaseResponse>(`/payments/payment/${paymentId}`, {
-        headers: {
-          ...(await this.tokenManager.getAuthHeaders()),
-          'Content-Type': 'application/x-www-form-urlencoded',
+      this._client.get<GoPayPaymentBaseResponse>(
+        `/payments/payment/${paymentId}`,
+        {
+          headers: {
+            ...(await this.tokenManager.getAuthHeaders()),
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
         },
-      }),
+      ),
     );
 
     if (error) {
@@ -729,11 +841,16 @@ export class GoPayProvider
     }
 
     if (!payment.value) {
-      throw new WebhookError('Payment not found', { provider: this.providerName });
+      throw new WebhookError('Payment not found', {
+        provider: this.providerName,
+      });
     }
 
     if (this.opts.debug) {
-      console.info('Webhook verified successfully, status:', payment.value.state);
+      console.info(
+        'Webhook verified successfully, status:',
+        payment.value.state,
+      );
     }
 
     const statusMap: Record<string, Payment['status'] | '__INDETERMINATE'> = {
@@ -816,7 +933,8 @@ export class GoPayProvider
 
         const isCancellingSubscription =
           parentId &&
-          (data as GoPaySubscriptionResponse).recurrence?.recurrence_state == 'STOPPED';
+          (data as GoPaySubscriptionResponse).recurrence?.recurrence_state ==
+            'STOPPED';
 
         const subscription = paykitSubscription$InboundSchema(
           data as GoPaySubscriptionResponse,
@@ -831,7 +949,11 @@ export class GoPayProvider
 
         return [
           ...(isCancellingSubscription
-            ? [paykitEvent$InboundSchema<Subscription>(subscriptionCanceledWebhookEvent)]
+            ? [
+                paykitEvent$InboundSchema<Subscription>(
+                  subscriptionCanceledWebhookEvent,
+                ),
+              ]
             : []),
           paykitEvent$InboundSchema<Payment>({
             type: 'payment.canceled',
@@ -869,7 +991,11 @@ export class GoPayProvider
 
         return [
           ...(parentId
-            ? [paykitEvent$InboundSchema<Subscription>(subscriptionCreatedWebhookEvent)]
+            ? [
+                paykitEvent$InboundSchema<Subscription>(
+                  subscriptionCreatedWebhookEvent,
+                ),
+              ]
             : []),
           paykitEvent$InboundSchema<Invoice>({
             type: 'invoice.generated',

@@ -478,6 +478,80 @@
         "database": "mysql",
         "auth": "none"
       }
+    },
+    {
+      "name": "paystack-nextjs",
+      "type": "registry:block",
+      "description": "Paystack payment integration for Next.js App Router with type-safe API routes and webhook handling",
+      "dependencies": ["@paykit-sdk/core", "@paykit-sdk/paystack"],
+      "devDependencies": [],
+      "registryDependencies": [],
+      "files": [
+        {
+          "path": "providers/paystack.ts",
+          "type": "registry:lib",
+          "target": "lib/paykit.ts"
+        },
+        {
+          "path": "shared/routers/nextjs/catch-all.ts",
+          "type": "registry:page",
+          "target": "app/api/paykit/[...endpoint]/route.ts"
+        },
+        {
+          "path": "shared/routers/nextjs/webhook.ts",
+          "type": "registry:page",
+          "target": "app/api/paykit/webhooks/route.ts"
+        }
+      ],
+      "envVars": {
+        "PAYSTACK_SECRET_KEY": "sk_test_...",
+        "PAYSTACK_WEBHOOK_SECRET": "whsec_..."
+      },
+      "docs": "Get your Paystack Secret Key from https://dashboard.paystack.com/#/settings/developer \n Create a webhook endpoint in your Paystack dashboard to get your webhook secret.",
+      "meta": {
+        "backend": "nextjs",
+        "provider": "paystack",
+        "orm": "none",
+        "database": "none",
+        "auth": "none"
+      }
+    },
+    {
+      "name": "paystack-hono",
+      "type": "registry:block",
+      "description": "Paystack payment integration for Hono backend with unified routes and webhook handling",
+      "dependencies": ["@paykit-sdk/core", "@paykit-sdk/paystack", "hono"],
+      "devDependencies": [],
+      "registryDependencies": [],
+      "files": [
+        {
+          "path": "providers/paystack.ts",
+          "type": "registry:lib",
+          "target": "lib/paykit.ts"
+        },
+        {
+          "path": "shared/routers/hono/catch-all.ts",
+          "type": "registry:page",
+          "target": "src/routes/paykit.ts"
+        },
+        {
+          "path": "shared/routers/hono/webhook.ts",
+          "type": "registry:page",
+          "target": "src/routes/paykit-webhooks.ts"
+        }
+      ],
+      "envVars": {
+        "PAYSTACK_SECRET_KEY": "sk_test_...",
+        "PAYSTACK_WEBHOOK_SECRET": "whsec_..."
+      },
+      "docs": "Get your Paystack Secret Key from https://dashboard.paystack.com/#/settings/developer \n Create a webhook endpoint in your Paystack dashboard to get your webhook secret.",
+      "meta": {
+        "backend": "hono",
+        "provider": "paystack",
+        "orm": "none",
+        "database": "none",
+        "auth": "none"
+      }
     }
   ]
 }
