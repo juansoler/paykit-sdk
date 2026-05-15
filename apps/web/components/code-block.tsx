@@ -6,7 +6,10 @@ import { Button, Tooltip } from '@paykit-sdk/ui';
 import { Check, Copy } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import {
+  oneDark,
+  oneLight,
+} from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 /**
  * @description Type assertion to fix React 19 compatibility
@@ -133,8 +136,10 @@ function CodeBlockContent({
 
   // Apply muted styling for bash
   if (language === 'bash') {
-    customStyleObj.background = resolvedTheme === 'dark' ? '#1f1f1f' : '#f5f5f5';
-    customStyleObj.color = resolvedTheme === 'dark' ? '#a1a1aa' : '#71717a';
+    customStyleObj.background =
+      resolvedTheme === 'dark' ? '#1f1f1f' : '#f5f5f5';
+    customStyleObj.color =
+      resolvedTheme === 'dark' ? '#a1a1aa' : '#71717a';
     customStyleObj.borderRadius = '8px';
   }
 
@@ -203,7 +208,8 @@ export const CodeBlock = ({
   const [copied, setCopied] = useState(false);
 
   const lang = (props.language || '').toLowerCase();
-  const isShell = lang === 'bash' || lang === 'sh' || lang === 'shell';
+  const isShell =
+    lang === 'bash' || lang === 'sh' || lang === 'shell';
   const shouldShowHeader = !isShell && (showCopyButton || !!filename);
 
   const copyToClipboard = async () => {
@@ -212,7 +218,8 @@ export const CodeBlock = ({
     setTimeout(() => setCopied(false), 10000); // 10 seconds
   };
 
-  if (!mounted) return <div className="bg-muted/20 h-6 animate-pulse rounded" />;
+  if (!mounted)
+    return <div className="bg-muted/20 h-6 animate-pulse rounded" />;
 
   // Shell variant: inline copy button inside the same block, no header
   if (!shouldShowHeader) {
@@ -237,7 +244,9 @@ export const CodeBlock = ({
                 )}
               </Button>
             </Tooltip.Trigger>
-            <Tooltip.Content side="top">{copied ? 'Copied' : 'Copy'}</Tooltip.Content>
+            <Tooltip.Content side="top">
+              {copied ? 'Copied' : 'Copy'}
+            </Tooltip.Content>
           </Tooltip.Root>
         </div>
       );
@@ -266,7 +275,11 @@ export const CodeBlock = ({
                 className="h-8 w-8 p-0 transition-opacity"
                 onClick={copyToClipboard}
               >
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copied ? (
+                  <Check className="h-4 w-4" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
                 <span className="sr-only">Copy code</span>
               </Button>
             </Tooltip.Trigger>

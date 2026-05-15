@@ -20,12 +20,13 @@ export interface CheckoutSubscription {
   billing_interval_count: number;
 }
 
-export const checkoutSubscriptionSchema = schema<CheckoutSubscription>()(
-  z.object({
-    billing_interval: subscriptionBillingIntervalSchema,
-    billing_interval_count: z.number(),
-  }),
-);
+export const checkoutSubscriptionSchema =
+  schema<CheckoutSubscription>()(
+    z.object({
+      billing_interval: subscriptionBillingIntervalSchema,
+      billing_interval_count: z.number(),
+    }),
+  );
 
 export const billingModeSchema = z.enum(['one_time', 'recurring']);
 
@@ -85,14 +86,18 @@ export const checkoutSchema = schema<Checkout>()(
     payment_url: z.string(),
     metadata: metadataSchema.nullable(),
     session_type: billingModeSchema,
-    products: z.array(z.object({ id: z.string(), quantity: z.number() })),
+    products: z.array(
+      z.object({ id: z.string(), quantity: z.number() }),
+    ),
     currency: z.string(),
     amount: z.number(),
     subscription: checkoutSubscriptionSchema.nullable().optional(),
   }),
 );
 
-interface CreateCheckoutBaseSchema extends Pick<Checkout, 'customer' | 'metadata'> {
+interface CreateCheckoutBaseSchema<
+  TProviderMetadata = Record<string, unknown>,
+> extends Pick<Checkout, 'customer' | 'metadata'> {
   /**
    * The item ID of the checkout.
    */
@@ -106,7 +111,7 @@ interface CreateCheckoutBaseSchema extends Pick<Checkout, 'customer' | 'metadata
   /**
    * Extra information to be sent to the provider e.g tax, trial days, etc.
    */
-  provider_metadata?: Record<string, unknown>;
+  provider_metadata?: TProviderMetadata;
 
   /**
    * The shipping information of the checkout.
@@ -124,20 +129,23 @@ interface CreateCheckoutBaseSchema extends Pick<Checkout, 'customer' | 'metadata
   cancel_url: string;
 }
 
-export const createCheckoutBaseSchema = schema<CreateCheckoutBaseSchema>()(
-  z.object({
-    customer: payeeSchema,
-    metadata: metadataSchema.nullable(),
-    item_id: z.string(),
-    quantity: z.number(),
-    provider_metadata: z.record(z.string(), z.unknown()).optional(),
-    billing: billingSchema.optional(),
-    success_url: z.string(),
-    cancel_url: z.string(),
-  }),
-);
+export const createCheckoutBaseSchema =
+  schema<CreateCheckoutBaseSchema>()(
+    z.object({
+      customer: payeeSchema,
+      metadata: metadataSchema.nullable(),
+      item_id: z.string(),
+      quantity: z.number(),
+      provider_metadata: z.record(z.string(), z.unknown()).optional(),
+      billing: billingSchema.optional(),
+      success_url: z.string(),
+      cancel_url: z.string(),
+    }),
+  );
 
-export interface CreateOneTimeCheckoutSchema extends CreateCheckoutBaseSchema {
+export interface CreateOneTimeCheckoutSchema<
+  TProviderMetadata = Record<string, unknown>,
+> extends CreateCheckoutBaseSchema<TProviderMetadata> {
   /**
    * The session type of the checkout.
    */
@@ -149,8 +157,12 @@ export interface CreateOneTimeCheckoutSchema extends CreateCheckoutBaseSchema {
   subscription?: CheckoutSubscription;
 }
 
-export interface CreateRecurringCheckoutSchema
-  extends Omit<CreateCheckoutBaseSchema, 'success_url' | 'cancel_url'> {
+export interface CreateRecurringCheckoutSchema<
+  TProviderMetadata = Record<string, unknown>,
+> extends Omit<
+    CreateCheckoutBaseSchema<TProviderMetadata>,
+    'success_url' | 'cancel_url'
+  > {
   /**
    * The session type of the checkout.
    */
@@ -162,9 +174,11 @@ export interface CreateRecurringCheckoutSchema
   subscription: CheckoutSubscription;
 }
 
-export type CreateCheckoutSchema =
-  | CreateOneTimeCheckoutSchema
-  | CreateRecurringCheckoutSchema;
+export type CreateCheckoutSchema<
+  TProviderMetadata = Record<string, unknown>,
+> =
+  | CreateOneTimeCheckoutSchema<TProviderMetadata>
+  | CreateRecurringCheckoutSchema<TProviderMetadata>;
 
 export const createCheckoutSchema = schema<CreateCheckoutSchema>()(
   z.object({
@@ -181,16 +195,21 @@ export const createCheckoutSchema = schema<CreateCheckoutSchema>()(
   }),
 );
 
-export type UpdateCheckoutSchema = Partial<CreateCheckoutSchema>;
+export type UpdateCheckoutSchema<
+  TProviderMetadata = Record<string, unknown>,
+> = Partial<CreateCheckoutSchema<TProviderMetadata>>;
 
-export const updateCheckoutSchema = createCheckoutSchema.partial();
+export const updateCheckoutSchema = schema<UpdateCheckoutSchema>()(
+  createCheckoutSchema.partial(),
+);
 
 export interface RetrieveCheckoutParams {
   id: string;
 }
 
-export const retrieveCheckoutSchema = schema<RetrieveCheckoutParams>()(
-  z.object({
-    id: z.string(),
-  }),
-);
+export const retrieveCheckoutSchema =
+  schema<RetrieveCheckoutParams>()(
+    z.object({
+      id: z.string(),
+    }),
+  );

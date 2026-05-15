@@ -28,7 +28,10 @@ export const subscriptionStatusEnum = pgEnum('subscription_status', [
   'pending',
 ]);
 
-export const invoiceStatusEnum = pgEnum('invoice_status', ['paid', 'open']);
+export const invoiceStatusEnum = pgEnum('invoice_status', [
+  'paid',
+  'open',
+]);
 
 // Tables
 export const customers = pgTable('customers', {
@@ -65,9 +68,13 @@ export const payments = pgTable(
     requiresAction: boolean('requires_action').default(false),
   },
   table => ({
-    customerIdIdx: index('payments_customer_id_idx').on(table.customerId),
+    customerIdIdx: index('payments_customer_id_idx').on(
+      table.customerId,
+    ),
     statusIdx: index('payments_status_idx').on(table.status),
-    customerEmailIdx: index('payments_customer_email_idx').on(table.customerEmail),
+    customerEmailIdx: index('payments_customer_email_idx').on(
+      table.customerEmail,
+    ),
   }),
 );
 
@@ -96,9 +103,13 @@ export const subscriptions = pgTable(
     customerEmail: text('customer_email'),
   },
   table => ({
-    customerIdIdx: index('subscriptions_customer_id_idx').on(table.customerId),
+    customerIdIdx: index('subscriptions_customer_id_idx').on(
+      table.customerId,
+    ),
     statusIdx: index('subscriptions_status_idx').on(table.status),
-    customerEmailIdx: index('subscriptions_customer_email_idx').on(table.customerEmail),
+    customerEmailIdx: index('subscriptions_customer_email_idx').on(
+      table.customerEmail,
+    ),
   }),
 );
 
@@ -125,9 +136,12 @@ export const invoices = pgTable(
   'invoices',
   {
     id: text('id').primaryKey(),
-    subscriptionId: text('subscription_id').references(() => subscriptions.id, {
-      onDelete: 'set null',
-    }),
+    subscriptionId: text('subscription_id').references(
+      () => subscriptions.id,
+      {
+        onDelete: 'set null',
+      },
+    ),
     billingMode: text('billing_mode').notNull(),
     amountPaid: integer('amount_paid').notNull(),
     currency: text('currency').notNull(),
@@ -147,10 +161,16 @@ export const invoices = pgTable(
     customerEmail: text('customer_email'),
   },
   table => ({
-    customerIdIdx: index('invoices_customer_id_idx').on(table.customerId),
-    subscriptionIdIdx: index('invoices_subscription_id_idx').on(table.subscriptionId),
+    customerIdIdx: index('invoices_customer_id_idx').on(
+      table.customerId,
+    ),
+    subscriptionIdIdx: index('invoices_subscription_id_idx').on(
+      table.subscriptionId,
+    ),
     statusIdx: index('invoices_status_idx').on(table.status),
-    customerEmailIdx: index('invoices_customer_email_idx').on(table.customerEmail),
+    customerEmailIdx: index('invoices_customer_email_idx').on(
+      table.customerEmail,
+    ),
   }),
 );
 

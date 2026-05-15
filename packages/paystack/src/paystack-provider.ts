@@ -1,0 +1,856 @@
+import {
+  AbstractPayKitProvider,
+  CapturePaymentSchema,
+  Checkout,
+  CreateCheckoutSchema,
+  CreateCustomerParams,
+  CreatePaymentSchema,
+  CreateRefundSchema,
+  CreateSubscriptionSchema,
+  Customer,
+  HTTPClient,
+  InvalidTypeError,
+  OperationFailedError,
+  PAYKIT_METADATA_KEY,
+  PayKitProvider,
+  PaykitProviderOptions,
+  Payment,
+  ProviderMetadataRegistry,
+  ProviderNotSupportedError,
+  Refund,
+  ResourceNotFoundError,
+  Subscription,
+  UpdateCheckoutSchema,
+  UpdateCustomerParams,
+  UpdatePaymentSchema,
+  UpdateSubscriptionSchema,
+  ValidationError,
+  WebhookError,
+  WebhookEventPayload,
+  WebhookHandlerConfig,
+  createCheckoutSchema,
+  createCustomerSchema,
+  createPaymentSchema,
+  createRefundSchema,
+  isEmailCustomer,
+  isIdCustomer,
+  parseCustomerName,
+  paykitEvent$InboundSchema,
+  schema,
+  stringifyMetadataValues,
+} from '@paykit-sdk/core';
+import { createHmac } from 'crypto';
+import { z } from 'zod';
+import {
+  PaystackCustomer,
+  PaystackInitializeResponse,
+  PaystackRawEvents,
+  PaystackRefund,
+  PaystackResponse,
+  PaystackSubscription,
+  PaystackTransaction,
+  PaystackWebhookEvent,
+} from './schema';
+import {
+  paykitCheckout$InboundSchema,
+  paykitCustomer$InboundSchema,
+  paykitInvoice$InboundSchema,
+  paykitPayment$InboundSchema,
+  paykitRefund$InboundSchema,
+  paykitSubscription$InboundSchema,
+} from './utils/mapper';
+
+interface PaystackMetadata extends ProviderMetadataRegistry {
+  refund: {
+    merchant_note: string;
+    customer_note: string;
+  };
+  checkout?: {
+    amount?: number;
+    currency?: string;
+  };
+}
+
+export interface PaystackOptions extends PaykitProviderOptions {
+  /**
+   * Paystack secret key (sk_live_xxx or sk_test_xxx)
+   */
+  secretKey: string;
+}
+
+const paystackOptionsSchema = schema<PaystackOptions>()(
+  z.object({
+    secretKey: z.string(),
+    isSandbox: z.boolean(),
+    debug: z.boolean().optional(),
+  }),
+);
+
+const providerName = 'paystack';
+
+export class PaystackProvider
+  extends AbstractPayKitProvider
+  implements PayKitProvider<PaystackMetadata, null, PaystackRawEvents>
+{
+  readonly providerName = providerName;
+  private readonly _client: HTTPClient;
+  private readonly opts: PaystackOptions;
+
+  constructor(opts: PaystackOptions) {
+    super(paystackOptionsSchema, opts, providerName);
+
+    this.opts = opts;
+
+    this._client = new HTTPClient({
+      baseUrl: 'https://api.paystack.co',
+      headers: {
+        Authorization: `Bearer ${opts.secretKey}`,
+        'Content-Type': 'application/json',
+      },
+      retryOptions: {
+        max: 3,
+        baseDelay: 1000,
+        debug: opts.debug ?? false,
+      },
+    });
+  }
+
+  get _native() {
+    return null;
+  }
+
+  private _toCamel(obj: any): any {
+    if (Array.isArray(obj)) return obj.map(v => this._toCamel(v));
+    if (
+      obj !== null &&
+      typeof obj === 'object' &&
+      obj.constructor === Object
+    ) {
+      return Object.fromEntries(
+        Object.entries(obj).map(([k, v]) => [
+          k.replace(/_([a-z])/g, (_, c) => c.toUpperCase()),
+          this._toCamel(v),
+        ]),
+      );
+    }
+    return obj;
+  }
+
+  private async unwrap<T>(
+    result: {
+      ok: boolean;
+      value?: PaystackResponse<T>;
+      error?: unknown;
+    },
+    operation: string,
+  ): Promise<T> {
+    if (!result.ok || !result.value?.status) {
+      throw new OperationFailedError(operation, this.providerName, {
+        cause: new Error(
+          result.value?.message ??
+            JSON.stringify(result.error) ??
+            'Unknown error',
+        ),
+      });
+    }
+
+    return this._toCamel(result.value.data) as T;
+  }
+
+  createCheckout = async (
+    params: CreateCheckoutSchema<PaystackMetadata['checkout']>,
+  ): Promise<Checkout> => {
+    const { error, data } = createCheckoutSchema.safeParse(params);
+
+    if (error) {
+      throw ValidationError.fromZodError(
+        error,
+        this.providerName,
+        'createCheckout',
+      );
+    }
+
+    if (!isEmailCustomer(data.customer)) {
+      throw new InvalidTypeError(
+        'customer',
+        'object with email',
+        'string (customer ID)',
+        { provider: this.providerName, method: 'createCheckout' },
+      );
+    }
+
+    const { amount, currency = 'NGN' } = data.provider_metadata ?? {};
+
+    const metadata = {
+      ...stringifyMetadataValues(data.metadata ?? {}),
+      [PAYKIT_METADATA_KEY]: JSON.stringify({
+        item_id: data.item_id,
+        quantity: data.quantity,
+        type: data.session_type,
+      }),
+    };
+
+    const body = {
+      email: data.customer.email,
+      amount: amount ?? 0,
+      currency,
+      reference: crypto.randomUUID(),
+      callback_url: data.success_url,
+      metadata: stringifyMetadataValues(metadata) as Record<
+        string,
+        string
+      >,
+      ...data.provider_metadata,
+    };
+
+    const response = await this._client.post<
+      PaystackResponse<PaystackInitializeResponse>
+    >('/transaction/initialize', { body: JSON.stringify(body) });
+
+    const initData = await this.unwrap(response, 'createCheckout');
+
+    const rawCustomer = await this._client.get<
+      PaystackResponse<PaystackCustomer>
+    >(`/customer/${encodeURIComponent(data.customer.email)}`);
+
+    return paykitCheckout$InboundSchema(initData, {
+      amount: body.amount as number,
+      currency: body.currency as string,
+      customer: await this.unwrap(rawCustomer, 'createCheckout'),
+      metadata: JSON.stringify(metadata),
+    } satisfies Partial<PaystackTransaction>);
+  };
+
+  retrieveCheckout = async (id: string): Promise<Checkout | null> => {
+    const response = await this._client.get<
+      PaystackResponse<PaystackTransaction>
+    >(`/transaction/verify/${encodeURIComponent(id)}`);
+
+    if (!response.ok || !response.value?.data) return null;
+
+    const txn = response.value.data;
+
+    return paykitCheckout$InboundSchema(
+      {
+        authorization_url: '',
+        access_code: '',
+        reference: txn.reference,
+      },
+      txn,
+    );
+  };
+
+  updateCheckout = async (
+    _id: string,
+    _params: UpdateCheckoutSchema<PaystackMetadata['checkout']>,
+  ): Promise<Checkout> => {
+    throw new ProviderNotSupportedError(
+      'updateCheckout',
+      'Paystack',
+      {
+        reason:
+          'Paystack does not support updating checkout sessions',
+        alternative: 'Create a new checkout session instead',
+      },
+    );
+  };
+
+  deleteCheckout = async (_id: string): Promise<null> => {
+    throw new ProviderNotSupportedError(
+      'deleteCheckout',
+      'Paystack',
+      {
+        reason:
+          'Paystack does not support deleting checkout sessions',
+      },
+    );
+  };
+
+  createCustomer = async (
+    params: CreateCustomerParams<PaystackMetadata['customer']>,
+  ): Promise<Customer> => {
+    const { error, data } = createCustomerSchema.safeParse(params);
+
+    if (error) {
+      throw ValidationError.fromZodError(
+        error,
+        this.providerName,
+        'createCustomer',
+      );
+    }
+
+    const { firstName, lastName } = parseCustomerName({
+      name: data.name,
+      email: data.email,
+    });
+
+    const body = {
+      email: data.email,
+      first_name: firstName,
+      last_name: lastName || undefined,
+      phone: data.phone || undefined,
+      metadata: data.metadata ?? {},
+      ...data.provider_metadata,
+    };
+
+    const response = await this._client.post<
+      PaystackResponse<PaystackCustomer>
+    >('/customer', { body: JSON.stringify(body) });
+
+    const customer = await this.unwrap(response, 'createCustomer');
+
+    return paykitCustomer$InboundSchema(customer);
+  };
+
+  retrieveCustomer = async (id: string): Promise<Customer | null> => {
+    const response = await this._client.get<
+      PaystackResponse<PaystackCustomer>
+    >(`/customer/${encodeURIComponent(id)}`);
+
+    if (!response.ok || !response.value?.data) return null;
+
+    return paykitCustomer$InboundSchema(response.value.data);
+  };
+
+  updateCustomer = async (
+    id: string,
+    params: UpdateCustomerParams<PaystackMetadata['customer']>,
+  ): Promise<Customer> => {
+    const body: Record<string, unknown> = {
+      ...params.provider_metadata,
+    };
+
+    if (params.email) body.email = params.email;
+    if (params.phone) body.phone = params.phone;
+    if (params.metadata) body.metadata = params.metadata;
+
+    if (params.name) {
+      const { firstName, lastName } = parseCustomerName({
+        name: params.name,
+        email: id,
+      });
+
+      body.first_name = firstName;
+      body.last_name = lastName || undefined;
+    }
+
+    const response = await this._client.put<
+      PaystackResponse<PaystackCustomer>
+    >(`/customer/${encodeURIComponent(id)}`, {
+      body: JSON.stringify(body),
+    });
+
+    const customer = await this.unwrap(response, 'updateCustomer');
+
+    return paykitCustomer$InboundSchema(customer);
+  };
+
+  deleteCustomer = async (_id: string): Promise<null> => {
+    throw new ProviderNotSupportedError(
+      'deleteCustomer',
+      'Paystack',
+      {
+        reason: 'Paystack does not support deleting customers',
+      },
+    );
+  };
+
+  createSubscription = async (
+    params: CreateSubscriptionSchema<
+      PaystackMetadata['subscription']
+    >,
+  ): Promise<Subscription> => {
+    const customerValue =
+      typeof params.customer === 'string'
+        ? params.customer
+        : 'email' in params.customer
+          ? params.customer.email
+          : null;
+
+    if (!customerValue) {
+      throw new InvalidTypeError(
+        'customer',
+        'string (customer code) or object with email',
+        typeof params.customer,
+        { provider: this.providerName, method: 'createSubscription' },
+      );
+    }
+
+    const body = {
+      customer: customerValue,
+      plan: params.item_id,
+      start_date: new Date().toISOString(),
+      metadata: params.metadata ?? {},
+      ...params.provider_metadata,
+    };
+
+    const response = await this._client.post<
+      PaystackResponse<PaystackSubscription>
+    >('/subscription', { body: JSON.stringify(body) });
+
+    const subscription = await this.unwrap(
+      response,
+      'createSubscription',
+    );
+
+    return paykitSubscription$InboundSchema(subscription);
+  };
+
+  retrieveSubscription = async (
+    id: string,
+  ): Promise<Subscription | null> => {
+    const response = await this._client.get<
+      PaystackResponse<PaystackSubscription>
+    >(`/subscription/${encodeURIComponent(id)}`);
+
+    if (!response.ok || !response.value?.data) return null;
+
+    return paykitSubscription$InboundSchema(response.value.data);
+  };
+
+  updateSubscription = async (
+    _id: string,
+    _params: UpdateSubscriptionSchema<
+      PaystackMetadata['subscription']
+    >,
+  ): Promise<Subscription> => {
+    throw new ProviderNotSupportedError(
+      'updateSubscription',
+      'Paystack',
+      {
+        reason:
+          'Paystack does not support directly updating subscriptions',
+        alternative:
+          'Cancel and create a new subscription with the desired plan',
+      },
+    );
+  };
+
+  cancelSubscription = async (id: string): Promise<Subscription> => {
+    const existing = await this.retrieveSubscription(id);
+
+    if (!existing) {
+      throw new ResourceNotFoundError(
+        'subscription',
+        id,
+        this.providerName,
+      );
+    }
+
+    const subResponse = await this._client.get<
+      PaystackResponse<PaystackSubscription>
+    >(`/subscription/${encodeURIComponent(id)}`);
+
+    const rawSub = await this.unwrap(
+      subResponse,
+      'cancelSubscription',
+    );
+
+    const body = {
+      code: rawSub.subscription_code,
+      token: rawSub.email_token,
+    };
+
+    await this._client.post<PaystackResponse<boolean>>(
+      '/subscription/disable',
+      { body: JSON.stringify(body) },
+    );
+
+    return { ...existing, status: 'canceled' };
+  };
+
+  deleteSubscription = async (_id: string): Promise<null> => {
+    throw new ProviderNotSupportedError(
+      'deleteSubscription',
+      'Paystack',
+      {
+        reason: 'Paystack does not support deleting subscriptions',
+        alternative:
+          'Cancel the subscription instead using cancelSubscription',
+      },
+    );
+  };
+
+  createPayment = async (
+    params: CreatePaymentSchema<PaystackMetadata['payment']>,
+  ): Promise<Payment> => {
+    const { error, data } = createPaymentSchema.safeParse(params);
+
+    if (error) {
+      throw ValidationError.fromZodError(
+        error,
+        this.providerName,
+        'createPayment',
+      );
+    }
+
+    let email: string;
+
+    if (isEmailCustomer(data.customer)) {
+      email = data.customer.email;
+    } else if (isIdCustomer(data.customer)) {
+      const customer = await this.retrieveCustomer(data.customer);
+
+      if (!customer) {
+        throw new ResourceNotFoundError(
+          'customer',
+          data.customer,
+          this.providerName,
+        );
+      }
+
+      email = customer.email;
+    } else {
+      throw new InvalidTypeError(
+        'customer',
+        'string (customer code) or object with email',
+        typeof data.customer,
+        { provider: this.providerName, method: 'createPayment' },
+      );
+    }
+
+    const metadata = {
+      ...(stringifyMetadataValues(data.metadata ?? {}) as Record<
+        string,
+        string
+      >),
+      [PAYKIT_METADATA_KEY]: JSON.stringify({
+        item_id: data.item_id,
+      }),
+    };
+
+    const reference = crypto.randomUUID();
+
+    const body = {
+      email,
+      amount: data.amount,
+      currency: data.currency,
+      reference,
+      metadata,
+      ...data.provider_metadata,
+    };
+
+    if (this.opts.debug) {
+      console.info('[Paystack] Initializing transaction', {
+        email,
+        amount: data.amount,
+      });
+    }
+
+    const response = await this._client.post<
+      PaystackResponse<PaystackInitializeResponse>
+    >('/transaction/initialize', { body: JSON.stringify(body) });
+
+    const initData = await this.unwrap(response, 'createPayment');
+
+    return {
+      id: initData.reference,
+      amount: data.amount,
+      currency: data.currency,
+      customer: isEmailCustomer(data.customer) ? { email } : email,
+      status: 'pending',
+      metadata: stringifyMetadataValues(
+        data.metadata ?? {},
+      ) as Record<string, string>,
+      item_id: data.item_id ?? null,
+      requires_action: true,
+      payment_url: initData.authorization_url,
+    };
+  };
+
+  retrievePayment = async (id: string): Promise<Payment | null> => {
+    const response = await this._client.get<
+      PaystackResponse<PaystackTransaction>
+    >(`/transaction/verify/${encodeURIComponent(id)}`);
+
+    if (!response.ok || !response.value?.data) return null;
+
+    return paykitPayment$InboundSchema(response.value.data);
+  };
+
+  updatePayment = async (
+    _id: string,
+    _params: UpdatePaymentSchema<PaystackMetadata['payment']>,
+  ): Promise<Payment> => {
+    throw new ProviderNotSupportedError('updatePayment', 'Paystack', {
+      reason:
+        'Paystack does not support updating transactions after initialization',
+    });
+  };
+
+  deletePayment = async (_id: string): Promise<null> => {
+    throw new ProviderNotSupportedError('deletePayment', 'Paystack', {
+      reason: 'Paystack does not support deleting transactions',
+    });
+  };
+
+  capturePayment = async (
+    _id: string,
+    _params: CapturePaymentSchema,
+  ): Promise<Payment> => {
+    throw new ProviderNotSupportedError(
+      'capturePayment',
+      'Paystack',
+      {
+        reason:
+          'Paystack transactions are charged immediately and do not support manual capture',
+      },
+    );
+  };
+
+  cancelPayment = async (_id: string): Promise<Payment> => {
+    throw new ProviderNotSupportedError('cancelPayment', 'Paystack', {
+      reason: 'Paystack does not support canceling transactions',
+    });
+  };
+
+  createRefund = async (
+    params: CreateRefundSchema<PaystackMetadata['refund']>,
+  ): Promise<Refund> => {
+    const { error, data } = createRefundSchema.safeParse(params);
+
+    if (error) {
+      throw ValidationError.fromZodError(
+        error,
+        this.providerName,
+        'createRefund',
+      );
+    }
+
+    const body: Record<string, unknown> = {
+      transaction: data.payment_id,
+      ...(data.amount && { amount: data.amount }),
+      ...(data.reason && { merchant_note: data.reason }),
+      ...(data.provider_metadata && { ...data.provider_metadata }),
+    };
+
+    const response = await this._client.post<
+      PaystackResponse<PaystackRefund>
+    >('/refund', { body: JSON.stringify(body) });
+
+    const refund = await this.unwrap(response, 'createRefund');
+
+    return paykitRefund$InboundSchema(refund, 'NGN');
+  };
+
+  handleWebhook = async (
+    payload: WebhookHandlerConfig,
+    webhookSecret: string,
+  ): Promise<Array<WebhookEventPayload<PaystackRawEvents>>> => {
+    const { body, headersAsObject } = payload;
+
+    const signature = headersAsObject['x-paystack-signature'];
+
+    if (!signature) {
+      throw new WebhookError('Missing x-paystack-signature header', {
+        provider: this.providerName,
+      });
+    }
+
+    const expectedSignature = createHmac('sha512', webhookSecret)
+      .update(body)
+      .digest('hex');
+
+    if (expectedSignature !== signature) {
+      throw new WebhookError('Invalid Paystack webhook signature', {
+        provider: this.providerName,
+      });
+    }
+
+    let event: PaystackWebhookEvent;
+
+    try {
+      event = JSON.parse(body) as PaystackWebhookEvent;
+    } catch {
+      throw new WebhookError(
+        'Invalid webhook payload: not valid JSON',
+        {
+          provider: this.providerName,
+        },
+      );
+    }
+
+    const results: Array<WebhookEventPayload<PaystackRawEvents>> = [];
+
+    results.push({
+      id: `paystack:${event.event}:${crypto.randomUUID()}`,
+      type: `paystack.${event.event}`,
+      created: Math.floor(Date.now() / 1000),
+      data: event.data as any,
+      is_raw: true,
+    });
+
+    const standardEvents = this.mapToStandardEvents(event);
+
+    if (standardEvents) results.push(...standardEvents);
+
+    return results;
+  };
+
+  private mapToStandardEvents = (
+    event: PaystackWebhookEvent,
+  ): Array<WebhookEventPayload> | null => {
+    const created = Math.floor(Date.now() / 1000);
+    const id = `paykit:${event.event}:${crypto.randomUUID()}`;
+
+    switch (event.event) {
+      case 'charge.success': {
+        const txn = event.data as unknown as PaystackTransaction;
+        const payment = paykitPayment$InboundSchema(txn);
+        const invoice = paykitInvoice$InboundSchema(txn);
+
+        return [
+          paykitEvent$InboundSchema({
+            type: 'payment.updated',
+            created,
+            id,
+            data: payment,
+          }),
+          paykitEvent$InboundSchema({
+            type: 'invoice.generated',
+            created,
+            id: `${id}-invoice`,
+            data: invoice,
+          }),
+        ];
+      }
+
+      case 'charge.failed': {
+        const txn = event.data as unknown as PaystackTransaction;
+        const payment = paykitPayment$InboundSchema(txn);
+
+        return [
+          paykitEvent$InboundSchema({
+            type: 'payment.updated',
+            created,
+            id,
+            data: payment,
+          }),
+        ];
+      }
+
+      case 'customer.create': {
+        const customerData =
+          event.data as unknown as PaystackCustomer;
+        const customer = paykitCustomer$InboundSchema(customerData);
+
+        return [
+          paykitEvent$InboundSchema({
+            type: 'customer.created',
+            created,
+            id,
+            data: customer,
+          }),
+        ];
+      }
+
+      case 'customeridentification.success':
+      case 'customeridentification.failed': {
+        const customerData =
+          event.data as unknown as PaystackCustomer;
+        const customer = paykitCustomer$InboundSchema(customerData);
+
+        return [
+          paykitEvent$InboundSchema({
+            type: 'customer.updated',
+            created,
+            id,
+            data: customer,
+          }),
+        ];
+      }
+
+      case 'subscription.create': {
+        const subData = event.data as unknown as PaystackSubscription;
+        const subscription =
+          paykitSubscription$InboundSchema(subData);
+
+        return [
+          paykitEvent$InboundSchema({
+            type: 'subscription.created',
+            created,
+            id,
+            data: subscription,
+          }),
+        ];
+      }
+
+      case 'subscription.not_renew':
+      case 'subscription.disable': {
+        return [
+          paykitEvent$InboundSchema({
+            type: 'subscription.canceled',
+            created,
+            id,
+            data: null,
+          }),
+        ];
+      }
+
+      case 'invoice.create':
+      case 'invoice.update': {
+        const invoiceData = event.data as {
+          transaction?: PaystackTransaction;
+        };
+        if (!invoiceData.transaction) return null;
+
+        const payment = paykitPayment$InboundSchema(
+          invoiceData.transaction,
+        );
+
+        return [
+          paykitEvent$InboundSchema({
+            type: 'payment.created',
+            created,
+            id,
+            data: payment,
+          }),
+        ];
+      }
+
+      case 'invoice.payment_failed': {
+        const invoiceData = event.data as {
+          transaction?: PaystackTransaction;
+        };
+        if (!invoiceData.transaction) return null;
+
+        const payment = paykitPayment$InboundSchema(
+          invoiceData.transaction,
+        );
+
+        return [
+          paykitEvent$InboundSchema({
+            type: 'payment.updated',
+            created,
+            id,
+            data: { ...payment, status: 'failed' as const },
+          }),
+        ];
+      }
+
+      case 'refund.pending':
+      case 'refund.processed':
+      case 'refund.failed': {
+        const refundData = event.data as unknown as PaystackRefund;
+        const refund = paykitRefund$InboundSchema(refundData, 'NGN');
+
+        return [
+          paykitEvent$InboundSchema({
+            type: 'refund.created',
+            created,
+            id,
+            data: refund,
+          }),
+        ];
+      }
+
+      default:
+        if (this.opts.debug) {
+          console.info(
+            `[Paystack] No standard mapping for event: ${event.event}. Available as raw event.`,
+          );
+        }
+        return null;
+    }
+  };
+}

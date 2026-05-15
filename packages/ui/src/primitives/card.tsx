@@ -1,7 +1,10 @@
 import * as React from 'react';
 import { cn } from '../lib/utils';
 
-const Root = ({ className, ...props }: React.ComponentProps<'div'>) => {
+const Root = ({
+  className,
+  ...props
+}: React.ComponentProps<'div'>) => {
   return (
     <div
       data-slot="card"
@@ -14,7 +17,10 @@ const Root = ({ className, ...props }: React.ComponentProps<'div'>) => {
   );
 };
 
-const Header = ({ className, ...props }: React.ComponentProps<'div'>) => {
+const Header = ({
+  className,
+  ...props
+}: React.ComponentProps<'div'>) => {
   return (
     <div
       data-slot="card-header"
@@ -27,7 +33,10 @@ const Header = ({ className, ...props }: React.ComponentProps<'div'>) => {
   );
 };
 
-const Title = ({ className, ...props }: React.ComponentProps<'div'>) => {
+const Title = ({
+  className,
+  ...props
+}: React.ComponentProps<'div'>) => {
   return (
     <div
       data-slot="card-title"
@@ -37,7 +46,10 @@ const Title = ({ className, ...props }: React.ComponentProps<'div'>) => {
   );
 };
 
-const Description = ({ className, ...props }: React.ComponentProps<'div'>) => {
+const Description = ({
+  className,
+  ...props
+}: React.ComponentProps<'div'>) => {
   return (
     <div
       data-slot="card-description"
@@ -47,7 +59,10 @@ const Description = ({ className, ...props }: React.ComponentProps<'div'>) => {
   );
 };
 
-const Action = ({ className, ...props }: React.ComponentProps<'div'>) => {
+const Action = ({
+  className,
+  ...props
+}: React.ComponentProps<'div'>) => {
   return (
     <div
       data-slot="card-action"
@@ -60,18 +75,41 @@ const Action = ({ className, ...props }: React.ComponentProps<'div'>) => {
   );
 };
 
-const Content = ({ className, ...props }: React.ComponentProps<'div'>) => {
-  return <div data-slot="card-content" className={cn('px-6', className)} {...props} />;
-};
-
-const Footer = ({ className, ...props }: React.ComponentProps<'div'>) => {
+const Content = ({
+  className,
+  ...props
+}: React.ComponentProps<'div'>) => {
   return (
     <div
-      data-slot="card-footer"
-      className={cn('flex items-center px-6 [.border-t]:pt-6', className)}
+      data-slot="card-content"
+      className={cn('px-6', className)}
       {...props}
     />
   );
 };
 
-export const Card = { Root, Header, Footer, Title, Action, Description, Content };
+const Footer = ({
+  className,
+  ...props
+}: React.ComponentProps<'div'>) => {
+  return (
+    <div
+      data-slot="card-footer"
+      className={cn(
+        'flex items-center px-6 [.border-t]:pt-6',
+        className,
+      )}
+      {...props}
+    />
+  );
+};
+
+export const Card = {
+  Root,
+  Header,
+  Footer,
+  Title,
+  Action,
+  Description,
+  Content,
+};

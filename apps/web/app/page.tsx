@@ -5,7 +5,13 @@ import {
 } from '@/components/icons';
 import { SiteHeader } from '@/components/site-header';
 import { Separator, Button, Badge, Card } from '@paykit-sdk/ui';
-import { Linkedin, Zap, Github, ArrowRight, Package } from 'lucide-react';
+import {
+  Linkedin,
+  Zap,
+  Github,
+  ArrowRight,
+  Package,
+} from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -36,7 +42,9 @@ const Index = () => {
         <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
           <Link href="/" className="flex items-center space-x-3">
             <PaykitIcon className="text-foreground size-4" />
-            <span className="text-xl font-bold tracking-tight">PayKit</span>
+            <span className="text-xl font-bold tracking-tight">
+              PayKit
+            </span>
           </Link>
 
           <SiteHeader />
@@ -48,7 +56,9 @@ const Index = () => {
         <div className="mb-20 space-y-6 text-center">
           <div className="bg-muted/50 inline-flex items-center space-x-2 rounded-full border px-4 py-2 text-sm">
             <Zap className="h-4 w-4 text-yellow-500" />
-            <span className="text-muted-foreground">Payment Infrastructure</span>
+            <span className="text-muted-foreground">
+              Payment Infrastructure
+            </span>
             <Badge variant="secondary" className="ml-2">
               TypeScript
             </Badge>
@@ -63,8 +73,8 @@ const Index = () => {
           </h1>
 
           <p className="text-muted-foreground mx-auto max-w-3xl text-xl leading-relaxed md:text-2xl">
-            We build tools that make payments simpler, more portable, and more accessible
-            for developers everywhere.
+            We build tools that make payments simpler, more portable,
+            and more accessible for developers everywhere.
           </p>
         </div>
 
@@ -83,11 +93,14 @@ const Index = () => {
               <Card.Header>
                 <div className="mb-2 flex items-center gap-2">
                   <Package className="h-5 w-5 text-blue-500" />
-                  <Card.Title className="text-xl">PayKit SDK</Card.Title>
+                  <Card.Title className="text-xl">
+                    PayKit SDK
+                  </Card.Title>
                 </div>
                 <Card.Description className="text-base leading-relaxed">
-                  Swap payment providers with 2 lines of code. A consistent TypeScript API
-                  across Stripe, PayPal, Polar, and more.
+                  Swap payment providers with 2 lines of code. A
+                  consistent TypeScript API across Stripe, PayPal,
+                  Polar, and more.
                 </Card.Description>
               </Card.Header>
               <Card.Content>
@@ -104,11 +117,14 @@ const Index = () => {
               <Card.Header>
                 <div className="mb-2 flex items-center gap-2">
                   <StellarToolsIcon className="h-5 w-5 text-purple-500" />
-                  <Card.Title className="text-xl">StellarTools</Card.Title>
+                  <Card.Title className="text-xl">
+                    StellarTools
+                  </Card.Title>
                 </div>
                 <Card.Description className="text-base leading-relaxed">
-                  Accept Stellar payments at checkout. Built for merchants who want
-                  crypto-native, wallet-connect powered payment flows.
+                  Accept Stellar payments at checkout. Built for
+                  merchants who want crypto-native, wallet-connect
+                  powered payment flows.
                 </Card.Description>
               </Card.Header>
               <Card.Content>
@@ -198,7 +214,10 @@ const Index = () => {
               <h3 className="font-semibold">Product</h3>
               <ul className="text-muted-foreground space-y-2 text-sm">
                 <li>
-                  <Link href="/sdk" className="hover:text-foreground transition-colors">
+                  <Link
+                    href="/sdk"
+                    className="hover:text-foreground transition-colors"
+                  >
                     PayKit SDK
                   </Link>
                 </li>
@@ -258,7 +277,8 @@ const Index = () => {
             </div>
 
             <p className="text-muted-foreground text-sm">
-              © {new Date().getFullYear()} PayKit. All rights reserved.
+              © {new Date().getFullYear()} PayKit. All rights
+              reserved.
             </p>
           </div>
         </div>

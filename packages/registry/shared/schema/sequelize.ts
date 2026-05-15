@@ -170,7 +170,13 @@ export const initializeSequelize = (sequelize: Sequelize) => {
         allowNull: false,
       },
       status: {
-        type: DataTypes.ENUM('active', 'past_due', 'canceled', 'expired', 'pending'),
+        type: DataTypes.ENUM(
+          'active',
+          'past_due',
+          'canceled',
+          'expired',
+          'pending',
+        ),
         allowNull: false,
       },
       itemId: {
@@ -386,19 +392,34 @@ export const initializeSequelize = (sequelize: Sequelize) => {
   );
 
   // Define associations
-  Customer.hasMany(Payment, { foreignKey: 'customerId', onDelete: 'CASCADE' });
+  Customer.hasMany(Payment, {
+    foreignKey: 'customerId',
+    onDelete: 'CASCADE',
+  });
   Payment.belongsTo(Customer, { foreignKey: 'customerId' });
 
-  Customer.hasMany(Subscription, { foreignKey: 'customerId', onDelete: 'CASCADE' });
+  Customer.hasMany(Subscription, {
+    foreignKey: 'customerId',
+    onDelete: 'CASCADE',
+  });
   Subscription.belongsTo(Customer, { foreignKey: 'customerId' });
 
-  Payment.hasMany(Refund, { foreignKey: 'paymentId', onDelete: 'CASCADE' });
+  Payment.hasMany(Refund, {
+    foreignKey: 'paymentId',
+    onDelete: 'CASCADE',
+  });
   Refund.belongsTo(Payment, { foreignKey: 'paymentId' });
 
-  Customer.hasMany(Invoice, { foreignKey: 'customerId', onDelete: 'CASCADE' });
+  Customer.hasMany(Invoice, {
+    foreignKey: 'customerId',
+    onDelete: 'CASCADE',
+  });
   Invoice.belongsTo(Customer, { foreignKey: 'customerId' });
 
-  Subscription.hasMany(Invoice, { foreignKey: 'subscriptionId', onDelete: 'SET NULL' });
+  Subscription.hasMany(Invoice, {
+    foreignKey: 'subscriptionId',
+    onDelete: 'SET NULL',
+  });
   Invoice.belongsTo(Subscription, { foreignKey: 'subscriptionId' });
 
   return {
@@ -411,8 +432,18 @@ export const initializeSequelize = (sequelize: Sequelize) => {
 };
 
 // Export types
-export type CustomerModel = ReturnType<typeof initializeSequelize>['Customer'];
-export type PaymentModel = ReturnType<typeof initializeSequelize>['Payment'];
-export type SubscriptionModel = ReturnType<typeof initializeSequelize>['Subscription'];
-export type RefundModel = ReturnType<typeof initializeSequelize>['Refund'];
-export type InvoiceModel = ReturnType<typeof initializeSequelize>['Invoice'];
+export type CustomerModel = ReturnType<
+  typeof initializeSequelize
+>['Customer'];
+export type PaymentModel = ReturnType<
+  typeof initializeSequelize
+>['Payment'];
+export type SubscriptionModel = ReturnType<
+  typeof initializeSequelize
+>['Subscription'];
+export type RefundModel = ReturnType<
+  typeof initializeSequelize
+>['Refund'];
+export type InvoiceModel = ReturnType<
+  typeof initializeSequelize
+>['Invoice'];

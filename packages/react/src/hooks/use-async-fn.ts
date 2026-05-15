@@ -6,7 +6,9 @@ type AsyncResult<T> =
   | [data: T, error: undefined]
   | [data: undefined, error: PayKitClientError];
 
-type HeadersEsque = Record<string, string> | (() => Record<string, string>);
+type HeadersEsque =
+  | Record<string, string>
+  | (() => Record<string, string>);
 
 export const useAsyncFn = <Args extends unknown[], Response>(
   path: EndpointPath,
@@ -21,7 +23,9 @@ export const useAsyncFn = <Args extends unknown[], Response>(
 
       try {
         const headers =
-          typeof headersEsque === 'function' ? headersEsque() : (headersEsque ?? {});
+          typeof headersEsque === 'function'
+            ? headersEsque()
+            : (headersEsque ?? {});
 
         const res = await fetch(`${apiUrl}${path}`, {
           method: 'POST',
@@ -57,7 +61,9 @@ export const useAsyncFn = <Args extends unknown[], Response>(
             ? err
             : new PayKitClientError({
                 message:
-                  err instanceof Error ? err.message : 'An unexpected error occurred',
+                  err instanceof Error
+                    ? err.message
+                    : 'An unexpected error occurred',
                 statusCode: err instanceof Error ? 0 : 500,
               });
 

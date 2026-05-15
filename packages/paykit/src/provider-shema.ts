@@ -6,12 +6,15 @@ export const providerSchema = z.custom<PayKitProvider>(
     if (!provider || typeof provider !== 'object') return false;
 
     const isNamed =
-      'providerName' in provider && typeof provider.providerName === 'string';
+      'providerName' in provider &&
+      typeof provider.providerName === 'string';
 
     if (!isNamed) return false;
 
     type MethodNames = {
-      [K in keyof PayKitProvider]: PayKitProvider[K] extends (...args: any[]) => any
+      [K in keyof PayKitProvider]: PayKitProvider[K] extends (
+        ...args: any[]
+      ) => any
         ? K
         : never;
     }[keyof PayKitProvider & string];
@@ -42,7 +45,9 @@ export const providerSchema = z.custom<PayKitProvider>(
     ];
 
     // Verify all required methods are implemented as functions
-    return requiredMethods.every(method => typeof provider[method] === 'function');
+    return requiredMethods.every(
+      method => typeof provider[method] === 'function',
+    );
   },
   {
     message:

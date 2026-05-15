@@ -23,59 +23,94 @@ import {
   UpdateSubscriptionSchema,
 } from './resources/subscription';
 import { WebhookEventPayload } from './resources/webhook';
-import { HandleWebhookParams } from './webhook-provider';
+import { WebhookHandlerConfig } from './webhook-provider';
 
-export interface PayKitProvider {
+export interface ProviderMetadataRegistry {
+  checkout?: any;
+  customer?: any;
+  payment?: any;
+  subscription?: any;
+  refund?: any;
+}
+
+export interface PayKitProvider<
+  TMetadata extends
+    ProviderMetadataRegistry = ProviderMetadataRegistry,
+  TNativeClient = any,
+  TRawEvents extends Record<string, any> = Record<string, any>,
+> {
   /**
    * The name of the provider implementation
-   * This is a required property for agentic operations on the provider
+   * This is a required property for agentic services on the provider
    */
   readonly providerName: string;
 
   /**
-   * Checkout sessions
+   * ESCAPE HATCH: Access the underlying SDK (Stripe, Adyen, etc.) directly.
+   * This allows devs to use features we haven't mapped yet without leaving the ecosystem.
    */
-  createCheckout(params: CreateCheckoutSchema): Promise<Checkout>;
+  readonly _native: TNativeClient;
+
+  /** Checkout */
+  createCheckout(
+    params: CreateCheckoutSchema<TMetadata['checkout']>,
+  ): Promise<Checkout>;
   retrieveCheckout(id: string): Promise<Checkout | null>;
-  updateCheckout(id: string, params: UpdateCheckoutSchema): Promise<Checkout>;
+  updateCheckout(
+    id: string,
+    params: UpdateCheckoutSchema<TMetadata['checkout']>,
+  ): Promise<Checkout>;
   deleteCheckout(id: string): Promise<null>;
 
-  /**
-   * Customer management
-   */
-  createCustomer(params: CreateCustomerParams): Promise<Customer>;
-  updateCustomer(id: string, params: UpdateCustomerParams): Promise<Customer>;
+  /** Customer */
+  createCustomer(
+    params: CreateCustomerParams<TMetadata['customer']>,
+  ): Promise<Customer>;
+  updateCustomer(
+    id: string,
+    params: UpdateCustomerParams<TMetadata['customer']>,
+  ): Promise<Customer>;
   retrieveCustomer(id: string): Promise<Customer | null>;
   deleteCustomer(id: string): Promise<null>;
 
-  /**
-   * Subscription management
-   */
-  createSubscription(params: CreateSubscriptionSchema): Promise<Subscription>;
-  updateSubscription(id: string, params: UpdateSubscriptionSchema): Promise<Subscription>;
+  /** Subscription */
+  createSubscription(
+    params: CreateSubscriptionSchema<TMetadata['subscription']>,
+  ): Promise<Subscription>;
+  updateSubscription(
+    id: string,
+    params: UpdateSubscriptionSchema<TMetadata['subscription']>,
+  ): Promise<Subscription>;
   cancelSubscription(id: string): Promise<Subscription>;
   deleteSubscription(id: string): Promise<null>;
   retrieveSubscription(id: string): Promise<Subscription | null>;
 
-  /**
-   * Payment management
-   */
-  createPayment(params: CreatePaymentSchema): Promise<Payment>;
-  updatePayment(id: string, params: UpdatePaymentSchema): Promise<Payment>;
+  /** Payment */
+  createPayment(
+    params: CreatePaymentSchema<TMetadata['payment']>,
+  ): Promise<Payment>;
+  updatePayment(
+    id: string,
+    params: UpdatePaymentSchema<TMetadata['payment']>,
+  ): Promise<Payment>;
   retrievePayment(id: string): Promise<Payment | null>;
   deletePayment(id: string): Promise<null>;
-  capturePayment(id: string, params: CapturePaymentSchema): Promise<Payment>;
+  capturePayment(
+    id: string,
+    params: CapturePaymentSchema,
+  ): Promise<Payment>;
   cancelPayment(id: string): Promise<Payment>;
 
-  /**
-   * Refund management
-   */
-  createRefund(params: CreateRefundSchema): Promise<Refund>;
+  /** Refund */
+  createRefund(
+    params: CreateRefundSchema<TMetadata['refund']>,
+  ): Promise<Refund>;
 
-  /**
-   * Webhook management
-   */
-  handleWebhook(payload: HandleWebhookParams): Promise<Array<WebhookEventPayload>>;
+  /** Webhook */
+  handleWebhook(
+    payload: WebhookHandlerConfig,
+    webhookSecret: string,
+  ): Promise<Array<WebhookEventPayload<TRawEvents>>>;
 }
 
 export class AbstractPayKitProvider {
@@ -87,10 +122,13 @@ export class AbstractPayKitProvider {
     const { error } = schema.safeParse(options);
 
     if (error) {
-      throw new ConfigurationError(`Invalid ${providerName} configuration`, {
-        provider: providerName,
-        missingKeys: Object.keys(error.flatten().fieldErrors ?? {}),
-      });
+      throw new ConfigurationError(
+        `Invalid ${providerName} configuration`,
+        {
+          provider: providerName,
+          missingKeys: Object.keys(error.flatten().fieldErrors ?? {}),
+        },
+      );
     }
   }
 }

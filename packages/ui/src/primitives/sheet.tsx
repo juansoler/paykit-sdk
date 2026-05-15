@@ -5,20 +5,32 @@ import * as SheetPrimitive from '@radix-ui/react-dialog';
 import { XIcon } from 'lucide-react';
 import { cn } from '../lib/utils';
 
-const Root = ({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) => {
+const Root = ({
+  ...props
+}: React.ComponentProps<typeof SheetPrimitive.Root>) => {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />;
 };
 
-const Trigger = ({ ...props }: React.ComponentProps<typeof SheetPrimitive.Trigger>) => {
-  return <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props} />;
+const Trigger = ({
+  ...props
+}: React.ComponentProps<typeof SheetPrimitive.Trigger>) => {
+  return (
+    <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props} />
+  );
 };
 
-const Close = ({ ...props }: React.ComponentProps<typeof SheetPrimitive.Close>) => {
+const Close = ({
+  ...props
+}: React.ComponentProps<typeof SheetPrimitive.Close>) => {
   return <SheetPrimitive.Close data-slot="sheet-close" {...props} />;
 };
 
-const Portal = ({ ...props }: React.ComponentProps<typeof SheetPrimitive.Portal>) => {
-  return <SheetPrimitive.Portal data-slot="sheet-portal" {...props} />;
+const Portal = ({
+  ...props
+}: React.ComponentProps<typeof SheetPrimitive.Portal>) => {
+  return (
+    <SheetPrimitive.Portal data-slot="sheet-portal" {...props} />
+  );
 };
 
 const Overlay = ({
@@ -74,7 +86,10 @@ const Content = ({
   );
 };
 
-const Header = ({ className, ...props }: React.ComponentProps<'div'>) => {
+const Header = ({
+  className,
+  ...props
+}: React.ComponentProps<'div'>) => {
   return (
     <div
       data-slot="sheet-header"
@@ -84,7 +99,10 @@ const Header = ({ className, ...props }: React.ComponentProps<'div'>) => {
   );
 };
 
-const Footer = ({ className, ...props }: React.ComponentProps<'div'>) => {
+const Footer = ({
+  className,
+  ...props
+}: React.ComponentProps<'div'>) => {
   return (
     <div
       data-slot="sheet-footer"

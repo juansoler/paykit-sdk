@@ -7,7 +7,8 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const title = searchParams.get('title') || 'Documentation';
-    const description = searchParams.get('description') || 'Learn how to use PayKit';
+    const description =
+      searchParams.get('description') || 'Learn how to use PayKit';
 
     return new ImageResponse(
       (
@@ -63,7 +64,9 @@ export async function GET(request: NextRequest) {
                 PayKit
               </span>
             </div>
-            <span style={{ fontSize: '18px', color: '#52525b' }}>usepaykit.dev</span>
+            <span style={{ fontSize: '18px', color: '#52525b' }}>
+              usepaykit.dev
+            </span>
           </div>
 
           {/* Badge */}

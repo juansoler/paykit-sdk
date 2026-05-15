@@ -67,7 +67,9 @@ export const Paykit = (props: React.SVGProps<SVGSVGElement>) => {
   );
 };
 
-export const StellarTools = (props: React.SVGProps<SVGSVGElement>) => {
+export const StellarTools = (
+  props: React.SVGProps<SVGSVGElement>,
+) => {
   return (
     <svg
       width={props.width}

@@ -12,7 +12,10 @@ export class WebhookController extends BaseController {
     webhookId: string;
     webhookEvent: string;
   }): Promise<ApiResponse<VerifyWebhookSchema>> {
-    const req = this.createRequest('POST', '/v1/notifications/verify-webhook-signature');
+    const req = this.createRequest(
+      'POST',
+      '/v1/notifications/verify-webhook-signature',
+    );
     req.header('Content-Type', 'application/json');
 
     req.throwOn(

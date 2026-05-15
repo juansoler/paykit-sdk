@@ -69,7 +69,18 @@ export const payeeSchema = schema<Payee>()(
   z.union([z.string(), customerSchema.pick({ email: true })]),
 );
 
-export interface CreateCustomerParams
+export interface CreateCustomerParams<
+  TProviderMetadata = Record<string, unknown>,
+> extends OverrideProps<
+    Pick<Customer, 'email' | 'name' | 'phone' | 'metadata'>,
+    {
+      name?: string;
+      billing: BillingInfo | null;
+      provider_metadata?: TProviderMetadata;
+    }
+  > {}
+
+export interface CreateCustomerParams1
   extends OverrideProps<
     Pick<Customer, 'email' | 'name' | 'phone' | 'metadata'>,
     { name?: string; billing: BillingInfo | null }
@@ -82,12 +93,16 @@ export const createCustomerSchema = schema<CreateCustomerParams>()(
     phone: z.string(),
     metadata: metadataSchema.optional(),
     billing: billingSchema.nullable(),
+    provider_metadata: z.record(z.string(), z.unknown()).optional(),
   }),
 );
 
-export interface UpdateCustomerParams
-  extends Partial<Pick<Customer, 'email' | 'name' | 'phone' | 'metadata'>> {
-  provider_metadata?: Record<string, unknown>;
+export interface UpdateCustomerParams<
+  TProviderMetadata = Record<string, unknown>,
+> extends Partial<
+    Pick<Customer, 'email' | 'name' | 'phone' | 'metadata'>
+  > {
+  provider_metadata?: TProviderMetadata;
   billing?: BillingInfo | null;
 }
 
@@ -107,16 +122,43 @@ export interface RetrieveCustomerParams {
   id: string;
 }
 
-export const retrieveCustomerSchema = schema<RetrieveCustomerParams>()(
-  z.object({
-    id: z.string(),
-  }),
-);
+export const retrieveCustomerSchema =
+  schema<RetrieveCustomerParams>()(
+    z.object({
+      id: z.string(),
+    }),
+  );
 
-export const isEmailCustomer = (customer: unknown): customer is EmailPayee => {
-  return typeof customer === 'object' && customer !== null && 'email' in customer;
+export const isEmailCustomer = (
+  customer: unknown,
+): customer is EmailPayee => {
+  return (
+    typeof customer === 'object' &&
+    customer !== null &&
+    'email' in customer
+  );
 };
 
-export const isIdCustomer = (customer: unknown): customer is CustomerIdPayee => {
+export const isIdCustomer = (
+  customer: unknown,
+): customer is CustomerIdPayee => {
   return typeof customer === 'string' && customer.length > 0;
+};
+
+export const parseCustomerName = (params: {
+  name?: string;
+  email: string;
+}) => {
+  const full = params.name?.trim() || params.email.split('@')[0];
+
+  const parts = full.split(/\s+/);
+  const first = parts[0] || '';
+  const last = parts.slice(1).join(' ') || '';
+
+  return {
+    fullName: full,
+    firstName: first,
+    lastName: last,
+    initials: `${first[0] || ''}${last[0] || ''}`.toUpperCase(),
+  };
 };

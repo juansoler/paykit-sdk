@@ -10,26 +10,29 @@ export function paypalImportTransformer(): Plugin {
     name: 'paypal-import-transformer',
     setup(build) {
       // Transform source code before parsing to rewrite imports
-      build.onLoad({ filter: /\.ts$/, namespace: 'file' }, async args => {
-        let contents = readFileSync(args.path, 'utf-8');
+      build.onLoad(
+        { filter: /\.ts$/, namespace: 'file' },
+        async args => {
+          let contents = readFileSync(args.path, 'utf-8');
 
-        // Replace dist/types with dist/cjs in import/export statements (ESM)
-        contents = contents.replace(
-          /from ['"]@paypal\/paypal-server-sdk\/dist\/types\/([^'"]+)['"]/g,
-          "from '@paypal/paypal-server-sdk/dist/cjs/$1'",
-        );
+          // Replace dist/types with dist/cjs in import/export statements (ESM)
+          contents = contents.replace(
+            /from ['"]@paypal\/paypal-server-sdk\/dist\/types\/([^'"]+)['"]/g,
+            "from '@paypal/paypal-server-sdk/dist/cjs/$1'",
+          );
 
-        // Replace dist/types with dist/cjs in require statements (CJS)
-        contents = contents.replace(
-          /require\(['"]@paypal\/paypal-server-sdk\/dist\/types\/([^'"]+)['"]\)/g,
-          "require('@paypal/paypal-server-sdk/dist/cjs/$1')",
-        );
+          // Replace dist/types with dist/cjs in require statements (CJS)
+          contents = contents.replace(
+            /require\(['"]@paypal\/paypal-server-sdk\/dist\/types\/([^'"]+)['"]\)/g,
+            "require('@paypal/paypal-server-sdk/dist/cjs/$1')",
+          );
 
-        return {
-          contents,
-          loader: 'ts',
-        };
-      });
+          return {
+            contents,
+            loader: 'ts',
+          };
+        },
+      );
     },
   };
 }

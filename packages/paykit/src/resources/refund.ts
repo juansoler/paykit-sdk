@@ -4,7 +4,9 @@ import { metadataSchema, PaykitMetadata } from './metadata';
 
 export type RefundReason = string | null;
 
-const refundReasonSchema = schema<RefundReason>()(z.string().nullable());
+const refundReasonSchema = schema<RefundReason>()(
+  z.string().nullable(),
+);
 
 export interface Refund {
   /**
@@ -43,8 +45,9 @@ export const refundSchema = schema<Refund>()(
   }),
 );
 
-export interface CreateRefundSchema
-  extends Pick<Refund, 'amount' | 'reason' | 'metadata'> {
+export interface CreateRefundSchema<
+  TProviderMetadata = Record<string, unknown>,
+> extends Pick<Refund, 'amount' | 'reason' | 'metadata'> {
   /**
    * The unique identifier of the payment.
    */
@@ -53,7 +56,7 @@ export interface CreateRefundSchema
   /**
    * The provider metadata of the refund.
    */
-  provider_metadata?: Record<string, unknown>;
+  provider_metadata?: TProviderMetadata;
 }
 
 export const createRefundSchema = schema<CreateRefundSchema>()(

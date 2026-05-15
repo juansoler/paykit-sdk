@@ -27,7 +27,8 @@ const getCodeLines = (provider: string) => [
 ];
 
 export function ProviderDemo() {
-  const [selectedProvider, setSelectedProvider] = React.useState<string>('stripe');
+  const [selectedProvider, setSelectedProvider] =
+    React.useState<string>('stripe');
 
   return (
     <section className="relative py-4">
@@ -40,7 +41,9 @@ export function ProviderDemo() {
           <div className="mb-16 text-center">
             <div className="bg-muted/50 mb-6 inline-flex items-center space-x-2 rounded-full border px-4 py-2 text-sm">
               <Code2 className="h-4 w-4 text-blue-500" />
-              <span className="text-muted-foreground">Interactive Demo</span>
+              <span className="text-muted-foreground">
+                Interactive Demo
+              </span>
               <Badge variant="secondary" className="ml-2">
                 Live Code
               </Badge>
@@ -55,8 +58,9 @@ export function ProviderDemo() {
             </h2>
 
             <p className="text-muted-foreground mx-auto max-w-2xl text-lg leading-relaxed">
-              Watch the magic happen. Only the lines that change between providers will
-              animate, showing you exactly what needs to be modified.
+              Watch the magic happen. Only the lines that change
+              between providers will animate, showing you exactly what
+              needs to be modified.
             </p>
           </div>
 
@@ -90,15 +94,21 @@ export function ProviderDemo() {
                       <div className="flex items-center space-x-3">
                         <div>
                           <h3 className="text-lg font-semibold">
-                            {selectedProvider.charAt(0).toUpperCase() +
+                            {selectedProvider
+                              .charAt(0)
+                              .toUpperCase() +
                               selectedProvider.slice(1)}{' '}
                             Implementation
                           </h3>
-                          <p className="text-muted-foreground text-sm">TypeScript</p>
+                          <p className="text-muted-foreground text-sm">
+                            TypeScript
+                          </p>
                         </div>
                       </div>
                     </div>
-                    <LineAnimatedCodeViewer lines={getCodeLines(selectedProvider)} />
+                    <LineAnimatedCodeViewer
+                      lines={getCodeLines(selectedProvider)}
+                    />
                   </div>
                 </div>
               </div>

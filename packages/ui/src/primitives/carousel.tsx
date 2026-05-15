@@ -1,7 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import useEmblaCarousel, { type UseEmblaCarouselType } from 'embla-carousel-react';
+import useEmblaCarousel, {
+  type UseEmblaCarouselType,
+} from 'embla-carousel-react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Button } from './button';
@@ -27,7 +29,8 @@ type CarouselContextProps = {
   canScrollNext: boolean;
 } & CarouselProps;
 
-const CarouselContext = React.createContext<CarouselContextProps | null>(null);
+const CarouselContext =
+  React.createContext<CarouselContextProps | null>(null);
 
 function useCarousel() {
   const context = React.useContext(CarouselContext);
@@ -104,7 +107,9 @@ const Root = ({
         carouselRef,
         api: api,
         opts,
-        orientation: orientation || (opts?.axis === 'y' ? 'vertical' : 'horizontal'),
+        orientation:
+          orientation ||
+          (opts?.axis === 'y' ? 'vertical' : 'horizontal'),
         scrollPrev,
         scrollNext,
         canScrollPrev,
@@ -125,11 +130,18 @@ const Root = ({
   );
 };
 
-const Content = ({ className, ...props }: React.ComponentProps<'div'>) => {
+const Content = ({
+  className,
+  ...props
+}: React.ComponentProps<'div'>) => {
   const { carouselRef, orientation } = useCarousel();
 
   return (
-    <div ref={carouselRef} className="overflow-hidden" data-slot="carousel-content">
+    <div
+      ref={carouselRef}
+      className="overflow-hidden"
+      data-slot="carousel-content"
+    >
       <div
         className={cn(
           'flex',
@@ -142,7 +154,10 @@ const Content = ({ className, ...props }: React.ComponentProps<'div'>) => {
   );
 };
 
-export const Item = ({ className, ...props }: React.ComponentProps<'div'>) => {
+export const Item = ({
+  className,
+  ...props
+}: React.ComponentProps<'div'>) => {
   const { orientation } = useCarousel();
 
   return (

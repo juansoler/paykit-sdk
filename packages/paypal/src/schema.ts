@@ -56,33 +56,36 @@ export interface CreateSubscriptionSchema {
   };
 }
 
-export const createSubscriptionApticSchema: Schema<CreateSubscriptionSchema> = object({
-  plan_id: ['plan_id', string()],
-  quantity: ['quantity', number()],
-  custom_id: ['custom_id', string()],
-  start_time: ['start_time', string()],
-  subscriber: [
-    'subscriber',
-    lazy(() =>
-      object({
-        email_address: ['email_address', string()],
-        name: [
-          'name',
-          lazy(() =>
-            object({
-              given_name: ['given_name', string()],
-              surname: ['surname', string()],
-            }),
-          ),
-        ],
-        phone: [
-          'phone',
-          lazy(() => object({ phone_number: ['phone_number', string()] })),
-        ],
-      }),
-    ),
-  ],
-});
+export const createSubscriptionApticSchema: Schema<CreateSubscriptionSchema> =
+  object({
+    plan_id: ['plan_id', string()],
+    quantity: ['quantity', number()],
+    custom_id: ['custom_id', string()],
+    start_time: ['start_time', string()],
+    subscriber: [
+      'subscriber',
+      lazy(() =>
+        object({
+          email_address: ['email_address', string()],
+          name: [
+            'name',
+            lazy(() =>
+              object({
+                given_name: ['given_name', string()],
+                surname: ['surname', string()],
+              }),
+            ),
+          ],
+          phone: [
+            'phone',
+            lazy(() =>
+              object({ phone_number: ['phone_number', string()] }),
+            ),
+          ],
+        }),
+      ),
+    ],
+  });
 
 enum SubscriptionStatus {
   APPROVAL_PENDING = 'APPROVAL_PENDING',
@@ -225,6 +228,10 @@ export interface VerifyWebhookSchema {
   verification_status: VerifyWebhookStatus;
 }
 
-export const verifyWebhookSchema: Schema<VerifyWebhookSchema> = object({
-  verification_status: ['verification_status', stringEnum(VerifyWebhookStatus)],
-});
+export const verifyWebhookSchema: Schema<VerifyWebhookSchema> =
+  object({
+    verification_status: [
+      'verification_status',
+      stringEnum(VerifyWebhookStatus),
+    ],
+  });

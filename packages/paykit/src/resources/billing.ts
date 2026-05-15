@@ -55,7 +55,10 @@ export const billingAddressSchema = schema<BillingAddress>()(
     city: z.string().min(1, 'City is required'),
     state: z.string().optional(), // Optional because not all countries use states
     postal_code: z.string().min(1, 'Postal code is required'),
-    country: z.string().length(2, 'Country must be a 2-letter ISO code').toUpperCase(),
+    country: z
+      .string()
+      .length(2, 'Country must be a 2-letter ISO code')
+      .toUpperCase(),
     phone: z.string().optional(),
   }),
 );

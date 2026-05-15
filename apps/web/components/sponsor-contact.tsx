@@ -13,8 +13,9 @@ export const SponsorContact = () => {
             </h2>
           </div>
           <p className="text-muted-foreground mx-auto max-w-2xl text-lg leading-relaxed">
-            Interested in sponsoring PayKit, building a partnership, or integrating your
-            payment provider? Let&apos;s connect and explore opportunities together.
+            Interested in sponsoring PayKit, building a partnership,
+            or integrating your payment provider? Let&apos;s connect
+            and explore opportunities together.
           </p>
         </div>
 
@@ -23,10 +24,13 @@ export const SponsorContact = () => {
             <Card.Header>
               <div className="mb-1 flex items-center gap-2">
                 <Handshake className="text-primary h-5 w-5" />
-                <Card.Title className="text-lg">Sponsorships</Card.Title>
+                <Card.Title className="text-lg">
+                  Sponsorships
+                </Card.Title>
               </div>
               <Card.Description>
-                Support PayKit&apos;s development and get visibility in our ecosystem
+                Support PayKit&apos;s development and get visibility
+                in our ecosystem
               </Card.Description>
             </Card.Header>
             <Card.Content>
@@ -47,11 +51,13 @@ export const SponsorContact = () => {
             <Card.Header>
               <div className="mb-1 flex items-center gap-2">
                 <MessageCircle className="text-primary h-5 w-5" />
-                <Card.Title className="text-lg">Integrations</Card.Title>
+                <Card.Title className="text-lg">
+                  Integrations
+                </Card.Title>
               </div>
               <Card.Description>
-                Want to add your payment provider to PayKit? Let&apos;s discuss
-                integration
+                Want to add your payment provider to PayKit?
+                Let&apos;s discuss integration
               </Card.Description>
             </Card.Header>
             <Card.Content>

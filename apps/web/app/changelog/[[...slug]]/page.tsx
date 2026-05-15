@@ -8,7 +8,9 @@ interface ChangelogPageProps {
   params: Promise<{ slug?: string[] }>;
 }
 
-async function getChangelogFromParams({ params }: ChangelogPageProps) {
+async function getChangelogFromParams({
+  params,
+}: ChangelogPageProps) {
   const { slug } = await params;
 
   if (!slug || slug.length === 0) {
@@ -17,19 +19,25 @@ async function getChangelogFromParams({ params }: ChangelogPageProps) {
 
   const slugAsParams = slug.join('/');
   const changelog = allChangelogs.find(
-    doc => doc.slugAsParams === slugAsParams && doc.published !== false,
+    doc =>
+      doc.slugAsParams === slugAsParams && doc.published !== false,
   );
 
   return changelog || null;
 }
 
-export default async function ChangelogPage({ params }: ChangelogPageProps) {
+export default async function ChangelogPage({
+  params,
+}: ChangelogPageProps) {
   const changelog = await getChangelogFromParams({ params });
 
   if (!changelog) {
     const items = allChangelogs
       .filter(p => p.published !== false)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      .sort(
+        (a, b) =>
+          new Date(b.date).getTime() - new Date(a.date).getTime(),
+      );
 
     return (
       <div className="mx-auto max-w-3xl px-6 py-12">
@@ -44,7 +52,9 @@ export default async function ChangelogPage({ params }: ChangelogPageProps) {
                 <Link href={item.slug}>{item.title}</Link>
               </h2>
               {item.description ? (
-                <p className="text-muted-foreground mt-1 text-sm">{item.description}</p>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  {item.description}
+                </p>
               ) : null}
             </li>
           ))}
@@ -66,7 +76,9 @@ export default async function ChangelogPage({ params }: ChangelogPageProps) {
       </div>
       <h1 className="mb-4 text-3xl font-bold">{changelog.title}</h1>
       {changelog.description && (
-        <p className="text-muted-foreground mb-8 text-lg">{changelog.description}</p>
+        <p className="text-muted-foreground mb-8 text-lg">
+          {changelog.description}
+        </p>
       )}
       <div className="prose prose-gray dark:prose-invert max-w-none">
         <Mdx code={changelog.body.code} />

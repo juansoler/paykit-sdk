@@ -98,7 +98,12 @@ export interface IInvoice extends Document {
 const CustomerSchema = new Schema<ICustomer>(
   {
     _id: { type: String, required: true },
-    email: { type: String, required: true, unique: true, index: true },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+    },
     name: { type: String, required: true },
     phone: { type: String, required: true },
     metadata: { type: Schema.Types.Mixed },
@@ -166,7 +171,12 @@ const RefundSchema = new Schema<IRefund>(
     currency: { type: String, required: true },
     reason: { type: String },
     metadata: { type: Schema.Types.Mixed },
-    paymentId: { type: String, ref: 'Payment', required: true, index: true },
+    paymentId: {
+      type: String,
+      ref: 'Payment',
+      required: true,
+      index: true,
+    },
     createdAt: { type: Date, default: Date.now },
   },
   {
@@ -177,7 +187,11 @@ const RefundSchema = new Schema<IRefund>(
 const InvoiceSchema = new Schema<IInvoice>(
   {
     _id: { type: String, required: true },
-    subscriptionId: { type: String, ref: 'Subscription', index: true },
+    subscriptionId: {
+      type: String,
+      ref: 'Subscription',
+      index: true,
+    },
     billingMode: { type: String, required: true },
     amountPaid: { type: Number, required: true },
     currency: { type: String, required: true },
@@ -203,6 +217,9 @@ const InvoiceSchema = new Schema<IInvoice>(
 // Models
 export const Customer = model<ICustomer>('Customer', CustomerSchema);
 export const Payment = model<IPayment>('Payment', PaymentSchema);
-export const Subscription = model<ISubscription>('Subscription', SubscriptionSchema);
+export const Subscription = model<ISubscription>(
+  'Subscription',
+  SubscriptionSchema,
+);
 export const Refund = model<IRefund>('Refund', RefundSchema);
 export const Invoice = model<IInvoice>('Invoice', InvoiceSchema);

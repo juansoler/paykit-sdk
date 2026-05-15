@@ -75,7 +75,9 @@ export const invoiceSchema = schema<Invoice>()(
     currency: z.string(),
     status: invoiceStatusSchema,
     paid_at: z.string().nullable(),
-    line_items: z.array(z.object({ id: z.string(), quantity: z.number() })).nullable(),
+    line_items: z
+      .array(z.object({ id: z.string(), quantity: z.number() }))
+      .nullable(),
     metadata: metadataSchema.nullable(),
     custom_fields: z.record(z.string(), z.any()).nullable(),
   }),

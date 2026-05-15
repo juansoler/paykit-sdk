@@ -14,7 +14,10 @@ interface AnimatedLineProps {
   isChangingLine: boolean;
 }
 
-const AnimatedLine = ({ content, isChangingLine }: AnimatedLineProps) => {
+const AnimatedLine = ({
+  content,
+  isChangingLine,
+}: AnimatedLineProps) => {
   const [currentContent, setCurrentContent] = React.useState(content);
   const [isAnimating, setIsAnimating] = React.useState(false);
 
@@ -74,7 +77,10 @@ export function LineAnimatedCodeViewer({
 }: LineAnimatedCodeViewerProps) {
   return (
     <div
-      className={cn('bg-card border-border overflow-hidden rounded-lg border', className)}
+      className={cn(
+        'bg-card border-border overflow-hidden rounded-lg border',
+        className,
+      )}
     >
       <div className="overflow-x-auto">
         <div className="min-w-max p-6">
@@ -83,7 +89,11 @@ export function LineAnimatedCodeViewer({
             const isChangingLine = index === 1 || index === 3;
 
             return (
-              <AnimatedLine key={index} content={line} isChangingLine={isChangingLine} />
+              <AnimatedLine
+                key={index}
+                content={line}
+                isChangingLine={isChangingLine}
+              />
             );
           })}
         </div>

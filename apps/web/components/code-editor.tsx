@@ -5,7 +5,10 @@ import { Button } from '@paykit-sdk/ui';
 import { Copy, Check } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import {
+  oneDark,
+  oneLight,
+} from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface CodeEditorProps {
   code: string;
@@ -50,7 +53,9 @@ export function CodeEditor({
     const isHighlighted = highlightLines.includes(lineNumber);
     return {
       style: {
-        backgroundColor: isHighlighted ? 'hsl(var(--primary) / 0.1)' : 'transparent',
+        backgroundColor: isHighlighted
+          ? 'hsl(var(--primary) / 0.1)'
+          : 'transparent',
         borderLeft: isHighlighted
           ? '3px solid hsl(var(--primary))'
           : '3px solid transparent',
@@ -70,7 +75,11 @@ export function CodeEditor({
           onClick={handleCopy}
           className="absolute top-3 right-3 z-10 opacity-0 transition-opacity group-hover:opacity-100"
         >
-          {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          {copied ? (
+            <Check className="h-4 w-4" />
+          ) : (
+            <Copy className="h-4 w-4" />
+          )}
         </Button>
       )}
 

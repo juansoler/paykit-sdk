@@ -65,7 +65,11 @@ Next.js catch‑all route. This forwards calls to the generated handlers.
 ```typescript
 // app/api/paykit/[...endpoint]/route.ts
 import { endpoints } from '@/lib/paykit';
-import type { EndpointArgs, EndpointHandler, EndpointPath } from '@paykit-sdk/core';
+import type {
+  EndpointArgs,
+  EndpointHandler,
+  EndpointPath,
+} from '@paykit-sdk/core';
 import { NextResponse, NextRequest } from 'next/server';
 
 export async function POST(
@@ -74,10 +78,15 @@ export async function POST(
 ) {
   const { endpoint: endpointArray } = await params;
   const endpoint = ('/' + endpointArray.join('/')) as EndpointPath;
-  const handler = endpoints[endpoint] as EndpointHandler<typeof endpoint>;
+  const handler = endpoints[endpoint] as EndpointHandler<
+    typeof endpoint
+  >;
 
   if (!handler) {
-    return NextResponse.json({ message: 'Endpoint not found' }, { status: 404 });
+    return NextResponse.json(
+      { message: 'Endpoint not found' },
+      { status: 404 },
+    );
   }
 
   const body = await request.json();
@@ -87,7 +96,12 @@ export async function POST(
     return NextResponse.json({ result });
   } catch (error) {
     return NextResponse.json(
-      { message: error instanceof Error ? error.message : 'Internal server error' },
+      {
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Internal server error',
+      },
       { status: 500 },
     );
   }
@@ -127,7 +141,10 @@ export async function POST(request: NextRequest) {
   const webhookSecret = process.env.PAYPAL_WEBHOOK_ID;
 
   if (!webhookSecret) {
-    return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Webhook secret not configured' },
+      { status: 500 },
+    );
   }
 
   const webhook = paykit.webhooks

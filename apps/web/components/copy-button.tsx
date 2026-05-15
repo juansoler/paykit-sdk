@@ -9,7 +9,11 @@ type CopyButtonProps = OverrideProps<
   { value: string }
 >;
 
-export function CopyButton({ value, children, ...props }: CopyButtonProps) {
+export function CopyButton({
+  value,
+  children,
+  ...props
+}: CopyButtonProps) {
   const [hasCopied, setHasCopied] = React.useState(false);
 
   React.useEffect(() => {

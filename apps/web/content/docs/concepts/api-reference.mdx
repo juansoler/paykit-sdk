@@ -117,7 +117,12 @@ interface Checkout {
 <br />
 
 ```typescript
-type SubscriptionStatus = 'active' | 'past_due' | 'canceled' | 'expired' | 'pending';
+type SubscriptionStatus =
+  | 'active'
+  | 'past_due'
+  | 'canceled'
+  | 'expired'
+  | 'pending';
 
 interface Subscription {
   /**

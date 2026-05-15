@@ -26,34 +26,74 @@ export const docsConfig = {
     {
       title: 'Getting Started',
       items: [
-        { title: 'Introduction', href: '/docs/introduction', items: [] },
+        {
+          title: 'Introduction',
+          href: '/docs/introduction',
+          items: [],
+        },
         {
           title: 'Installation',
           href: '/docs/installation-root',
           items: [
-            { title: 'Next.js Guide', href: '/docs/nextjs-installation', items: [] },
-            { title: 'Hono Guide', href: '/docs/hono-installation', items: [] },
-            { title: 'Express Guide', href: '/docs/express-installation', items: [] },
+            {
+              title: 'Next.js Guide',
+              href: '/docs/nextjs-installation',
+              items: [],
+            },
+            {
+              title: 'Hono Guide',
+              href: '/docs/hono-installation',
+              items: [],
+            },
+            {
+              title: 'Express Guide',
+              href: '/docs/express-installation',
+              items: [],
+            },
           ],
         },
-        { title: 'Quick Start', href: '/docs/getting-started', items: [] },
+        {
+          title: 'Quick Start',
+          href: '/docs/getting-started',
+          items: [],
+        },
       ],
     },
     {
       title: 'Payment Providers',
       items: [
-        { title: 'Overview', href: '/docs/providers/overview', items: [] },
-        { title: 'Stripe', href: '/docs/providers/stripe', items: [] },
+        {
+          title: 'Overview',
+          href: '/docs/providers/overview',
+          items: [],
+        },
+        {
+          title: 'Stripe',
+          href: '/docs/providers/stripe',
+          items: [],
+        },
         { title: 'Polar', href: '/docs/providers/polar', items: [] },
-        { title: 'PayPal', href: '/docs/providers/paypal', items: [] },
+        {
+          title: 'PayPal',
+          href: '/docs/providers/paypal',
+          items: [],
+        },
         { title: 'GoPay', href: '/docs/providers/gopay', items: [] },
       ],
     },
     {
       title: 'Core Concepts',
       items: [
-        { title: 'API Reference', href: '/docs/concepts/api-reference', items: [] },
-        { title: 'Error Handling', href: '/docs/concepts/error-handling', items: [] },
+        {
+          title: 'API Reference',
+          href: '/docs/concepts/api-reference',
+          items: [],
+        },
+        {
+          title: 'Error Handling',
+          href: '/docs/concepts/error-handling',
+          items: [],
+        },
         {
           title: 'Client Side Integration',
           href: '/docs/concepts/client-side-usage',
@@ -63,7 +103,13 @@ export const docsConfig = {
     },
     {
       title: 'Adapters',
-      items: [{ title: 'MedusaJS', href: '/docs/adapters/medusajs', items: [] }],
+      items: [
+        {
+          title: 'MedusaJS',
+          href: '/docs/adapters/medusajs',
+          items: [],
+        },
+      ],
     },
   ],
 } satisfies {

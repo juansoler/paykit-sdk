@@ -41,10 +41,18 @@ function App() {
 
 ```tsx
 import * as React from 'react';
-import { useCustomer, useSubscription, useCheckout } from '@paykit-sdk/react';
+import {
+  useCustomer,
+  useSubscription,
+  useCheckout,
+} from '@paykit-sdk/react';
 import { CustomerView } from './customer-view';
 
-const CustomerDashboard = ({ customerId }: { customerId: string }) => {
+const CustomerDashboard = ({
+  customerId,
+}: {
+  customerId: string;
+}) => {
   const { retrieve, create, update } = useCustomer();
 
   React.useEffect(() => {

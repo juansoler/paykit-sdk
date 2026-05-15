@@ -1,4 +1,10 @@
-import { ERR, OK, Result, buildError, executeWithRetryWithHandler } from './tools';
+import {
+  ERR,
+  OK,
+  Result,
+  buildError,
+  executeWithRetryWithHandler,
+} from './tools';
 import { classifyError } from './tools/classify-error';
 
 export type HTTPClientConfig = {
@@ -16,11 +22,15 @@ export class HTTPClient {
   };
 
   private getFullUrl(endpoint: string): string {
-    const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+    const cleanEndpoint = endpoint.startsWith('/')
+      ? endpoint.slice(1)
+      : endpoint;
     return `${this.config.baseUrl}/${cleanEndpoint}`;
   }
 
-  private getRequestOptions(options?: Omit<RequestInit, 'method'>): RequestInit {
+  private getRequestOptions(
+    options?: Omit<RequestInit, 'method'>,
+  ): RequestInit {
     return {
       headers: {
         'Content-Type': 'application/json',
@@ -54,7 +64,9 @@ export class HTTPClient {
     return { retry: shouldRetry, data: null };
   };
 
-  private async withRetry<T>(apiCall: () => Promise<Result<T>>): Promise<Result<T>> {
+  private async withRetry<T>(
+    apiCall: () => Promise<Result<T>>,
+  ): Promise<Result<T>> {
     return executeWithRetryWithHandler(
       apiCall,
       this.retryErrorHandler,
@@ -71,14 +83,19 @@ export class HTTPClient {
       const url = this.getFullUrl(endpoint);
       const requestOptions = this.getRequestOptions(options);
 
-      const res = await fetch(url, { method: 'GET', ...requestOptions });
+      const res = await fetch(url, {
+        method: 'GET',
+        ...requestOptions,
+      });
 
       const data = (await res.json()) as T;
 
       if (!res.ok) {
         return ERR(
           buildError(
-            classifyError(new Error(`${res.status}: ${JSON.stringify(data)}`)),
+            classifyError(
+              new Error(`${res.status}: ${JSON.stringify(data)}`),
+            ),
             data,
           ),
         );
@@ -94,14 +111,19 @@ export class HTTPClient {
     return this.withRetry(async () => {
       const url = this.getFullUrl(endpoint);
       const requestOptions = this.getRequestOptions(options);
-      const res = await fetch(url, { method: 'POST', ...requestOptions });
+      const res = await fetch(url, {
+        method: 'POST',
+        ...requestOptions,
+      });
 
       const data = (await res.json()) as T;
 
       if (!res.ok) {
         return ERR(
           buildError(
-            classifyError(new Error(`${res.status}: ${JSON.stringify(data)}`)),
+            classifyError(
+              new Error(`${res.status}: ${JSON.stringify(data)}`),
+            ),
             data,
           ),
         );

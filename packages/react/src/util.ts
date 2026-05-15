@@ -30,7 +30,11 @@ export const parsePayKitClientError = (
   errorData: unknown,
 ): PayKitClientError => {
   // If errorData is already a proper error response object
-  if (errorData && typeof errorData === 'object' && 'message' in errorData) {
+  if (
+    errorData &&
+    typeof errorData === 'object' &&
+    'message' in errorData
+  ) {
     const data = errorData as PayKitClientErrorData;
     return new PayKitClientError({
       message: data.message,

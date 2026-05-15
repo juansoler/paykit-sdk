@@ -40,8 +40,11 @@ export const agenticCheckoutSession$InboundSchema = (
     currency: checkout.currency,
     line_items: checkout.products,
     fulfillment_options:
-      JSON.parse(JSON.stringify(checkout.metadata?.fulfillment_address ?? {})) ?? [],
-    fulfillment_option_id: checkout.metadata?.fulfillment_option_id ?? null,
+      JSON.parse(
+        JSON.stringify(checkout.metadata?.fulfillment_address ?? {}),
+      ) ?? [],
+    fulfillment_option_id:
+      checkout.metadata?.fulfillment_option_id ?? null,
     totals: [],
     messages: [],
     order: null,

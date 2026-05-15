@@ -41,7 +41,11 @@ export class PayKitError extends Error {
  * Use this when a method is in the interface but not yet built
  */
 export class NotImplementedError extends PayKitError {
-  constructor(method: string, provider?: string, options?: { futureSupport?: boolean }) {
+  constructor(
+    method: string,
+    provider?: string,
+    options?: { futureSupport?: boolean },
+  ) {
     const message = options?.futureSupport
       ? `${method} is not yet implemented${provider ? ` for ${provider}` : ''}. ` +
         `This feature is planned for a future release. ` +
@@ -87,7 +91,10 @@ export class ProviderNotSupportedError extends PayKitError {
       statusCode: 501,
       provider,
       method,
-      context: { reason: options?.reason, alternative: options?.alternative },
+      context: {
+        reason: options?.reason,
+        alternative: options?.alternative,
+      },
     });
   }
 }
@@ -139,7 +146,11 @@ export class ValidationError extends PayKitError {
  * Use when a requested resource doesn't exist
  */
 export class ResourceNotFoundError extends PayKitError {
-  constructor(resourceType: string, resourceId: string, provider?: string) {
+  constructor(
+    resourceType: string,
+    resourceId: string,
+    provider?: string,
+  ) {
     super(`${resourceType} with ID "${resourceId}" not found`, {
       code: 'RESOURCE_NOT_FOUND',
       statusCode: 404,
@@ -248,7 +259,10 @@ export class RateLimitError extends PayKitError {
         code: 'RATE_LIMIT_ERROR',
         statusCode: 429,
         provider,
-        context: { retryAfter: options?.retryAfter, limit: options?.limit },
+        context: {
+          retryAfter: options?.retryAfter,
+          limit: options?.limit,
+        },
       },
     );
   }
@@ -301,7 +315,11 @@ export class ConstraintViolationError extends PayKitError {
         code: 'CONSTRAINT_VIOLATION',
         statusCode: 400,
         provider: options?.provider,
-        context: { constraint, value: options?.value, limit: options?.limit },
+        context: {
+          constraint,
+          value: options?.value,
+          limit: options?.limit,
+        },
       },
     );
   }

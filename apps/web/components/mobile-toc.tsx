@@ -27,7 +27,9 @@ export function MobileToc({ toc }: MobileTocProps) {
       </Sheet.Trigger>
       <Sheet.Content side="right" className="w-80 p-0">
         <Sheet.Header className="p-6 pb-4">
-          <Sheet.Title className="text-left">On this page</Sheet.Title>
+          <Sheet.Title className="text-left">
+            On this page
+          </Sheet.Title>
         </Sheet.Header>
         <div className="h-[calc(100vh-8rem)] overflow-auto px-6 pb-6">
           <div className="space-y-6">

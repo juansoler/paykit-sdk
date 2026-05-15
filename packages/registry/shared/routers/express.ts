@@ -1,5 +1,9 @@
 import { endpoints, paykit } from '@/lib/paykit';
-import type { EndpointArgs, EndpointHandler, EndpointPath } from '@paykit-sdk/core';
+import type {
+  EndpointArgs,
+  EndpointHandler,
+  EndpointPath,
+} from '@paykit-sdk/core';
 import { Router, type Request, type Response } from 'express';
 
 export const paykitRouter = Router();
@@ -20,51 +24,64 @@ paykitRouter.post('/*', async (req: Request, res: Response) => {
     return res.json({ result });
   } catch (error) {
     console.error('PayKit API Error:', error);
-    const message = error instanceof Error ? error.message : 'Internal server error';
+    const message =
+      error instanceof Error
+        ? error.message
+        : 'Internal server error';
     return res.status(500).json({ message });
   }
 });
 
 // Webhook handler
-paykitRouter.post('/webhooks', async (req: Request, res: Response) => {
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+paykitRouter.post(
+  '/webhooks',
+  async (req: Request, res: Response) => {
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-  if (!webhookSecret) {
-    return res.status(500).json({ error: 'Webhook secret not configured' });
-  }
+    if (!webhookSecret) {
+      return res
+        .status(500)
+        .json({ error: 'Webhook secret not configured' });
+    }
 
-  const webhook = paykit.webhooks
-    .setup({ webhookSecret })
-    .on('customer.created', async event => {
-      console.log('Customer created:', event.data);
-    })
-    .on('subscription.created', async event => {
-      console.log('Subscription created:', event.data);
-    })
-    .on('payment.created', async event => {
-      console.log('Payment created:', event.data);
-    })
-    .on('refund.created', async event => {
-      console.log('Refund created:', event.data);
-    })
-    .on('invoice.generated', async event => {
-      console.log('Invoice generated:', event.data);
-    });
+    const webhook = paykit.webhooks
+      .setup({ webhookSecret })
+      .on('customer.created', async event => {
+        console.log('Customer created:', event.data);
+      })
+      .on('subscription.created', async event => {
+        console.log('Subscription created:', event.data);
+      })
+      .on('payment.created', async event => {
+        console.log('Payment created:', event.data);
+      })
+      .on('refund.created', async event => {
+        console.log('Refund created:', event.data);
+      })
+      .on('invoice.generated', async event => {
+        console.log('Invoice generated:', event.data);
+      });
 
-  // Express stores raw body in req.body when using express.raw()
-  const body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
-  const headers = new Headers(Object.entries(req.headers) as [string, string][]);
-  const fullUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+    // Express stores raw body in req.body when using express.raw()
+    const body =
+      typeof req.body === 'string'
+        ? req.body
+        : JSON.stringify(req.body);
+    const headers = new Headers(
+      Object.entries(req.headers) as [string, string][],
+    );
+    const fullUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
 
-  try {
-    console.log('Webhook handled');
-    await webhook.handle({ body, headers, fullUrl });
-    return res.json({ success: true });
-  } catch (error) {
-    console.log('Webhook Error', error);
-    return res.json({ success: false });
-  }
-});
+    try {
+      console.log('Webhook handled');
+      await webhook.handle({ body, headers, fullUrl });
+      return res.json({ success: true });
+    } catch (error) {
+      console.log('Webhook Error', error);
+      return res.json({ success: false });
+    }
+  },
+);
 
 /**
  * MAIN APP ROUTER INTEGRATION:

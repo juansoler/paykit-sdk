@@ -42,7 +42,11 @@ export const agenticLinkSchema = z.object({
   /**
    * The type of the link.
    */
-  type: z.enum(['terms_of_use', 'privacy_policy', 'seller_shop_policies']),
+  type: z.enum([
+    'terms_of_use',
+    'privacy_policy',
+    'seller_shop_policies',
+  ]),
 
   /**
    * The URL of the link.

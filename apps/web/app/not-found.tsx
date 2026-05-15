@@ -11,13 +11,18 @@ export default function NotFound() {
             <AlertCircle className="text-muted-foreground h-8 w-8" />
           </div>
           <div className="space-y-2">
-            <Card.Title className="text-4xl font-bold">404</Card.Title>
-            <Card.Description className="text-lg">Page not found</Card.Description>
+            <Card.Title className="text-4xl font-bold">
+              404
+            </Card.Title>
+            <Card.Description className="text-lg">
+              Page not found
+            </Card.Description>
           </div>
         </Card.Header>
         <Card.Content className="space-y-4">
           <p className="text-muted-foreground">
-            Sorry, we couldn&apos;t find the page you&apos;re looking for.
+            Sorry, we couldn&apos;t find the page you&apos;re looking
+            for.
           </p>
           <div className="flex flex-col justify-center gap-3 sm:flex-row">
             <Button asChild variant="outline">
