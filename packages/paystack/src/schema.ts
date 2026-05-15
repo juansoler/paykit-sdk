@@ -23,8 +23,6 @@ export interface PaystackWebhookEvent<
   data: D;
 }
 
-// ─── Shared ──────────────────────────────────────────────────────────────────
-
 export interface PaystackAuthorization {
   /**
    * The authorization code of the authorization
@@ -80,8 +78,6 @@ export interface PaystackAuthorization {
   account_name?: string | null;
 }
 
-// ─── Customer ────────────────────────────────────────────────────────────────
-
 export interface PaystackCustomer {
   /**
    * The integration of the customer
@@ -136,8 +132,6 @@ export interface PaystackCustomer {
    */
   updated_at: string;
 }
-
-// ─── Transaction ─────────────────────────────────────────────────────────────
 
 export interface PaystackTransaction {
   /**
@@ -238,8 +232,6 @@ export interface PaystackInitializeResponse {
    */
   reference: string;
 }
-
-// ─── Refund ──────────────────────────────────────────────────────────────────
 
 export interface PaystackRefund {
   id: number;
@@ -360,8 +352,6 @@ export interface PaystackPlan {
   hosted_page_summary?: string | null;
 }
 
-// ─── Subscription ────────────────────────────────────────────────────────────
-
 export interface PaystackSubscription {
   /**
    * The id of the subscription
@@ -378,12 +368,7 @@ export interface PaystackSubscription {
   /**
    * The status of the subscription
    */
-  status:
-    | 'active'
-    | 'non-renewing'
-    | 'attention'
-    | 'completed'
-    | 'cancelled';
+  status: 'active' | 'non-renewing' | 'attention' | 'completed' | 'cancelled';
   /**
    * The amount of the subscription
    */
@@ -504,8 +489,6 @@ export interface PaystackInvoice {
   updated_at: string;
 }
 
-// ─── Transfer ────────────────────────────────────────────────────────────────
-
 export interface PaystackTransferRecipient {
   /**
    * The domain of the transfer recipient
@@ -620,8 +603,6 @@ export interface PaystackTransfer {
    */
   updated_at?: string;
 }
-
-// ─── Payment Request ─────────────────────────────────────────────────────────
 
 export interface PaystackPaymentRequest {
   /**
@@ -815,8 +796,6 @@ export interface PaystackDVAAssignment {
   reason?: string;
 }
 
-// ─── Customer Identification ──────────────────────────────────────────────────
-
 export interface PaystackCustomerIdentification {
   /**
    * The id of the customer
@@ -904,8 +883,6 @@ export interface PaystackDispute {
    */
   due_at: string | null;
 }
-
-// ─── Expiring Card (subscription.expiring_cards) ──────────────────────────────
 
 export interface PaystackExpiringCard {
   /**

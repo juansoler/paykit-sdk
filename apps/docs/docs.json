@@ -42,8 +42,7 @@
         "group": "Guides",
         "pages": [
           "custom-provider",
-          "adapters/medusajs",
-          "adapters/agentic"
+          "adapters/medusajs"
         ]
       }
     ]

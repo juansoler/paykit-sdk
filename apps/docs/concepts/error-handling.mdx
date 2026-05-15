@@ -1,22 +1,20 @@
 ---
 title: Error Handling
-description: Every PayKit method returns a [data, error] tuple.
+description: PayKit methods throw on failure. Wrap with try/catch to handle errors.
 ---
 
-No try/catch needed. Every method returns `[data, error]`:
+PayKit methods return the result directly. Wrap with `try/catch` to handle errors:
 
 ```typescript
-const [customer, error] = await paykit.customers.create({
-  email: 'user@example.com',
-  name: 'Jane Doe',
-});
-
-if (error) {
+try {
+  const customer = await paykit.customers.create({
+    email: 'user@example.com',
+    name: 'Jane Doe',
+  });
+  console.log(customer.id);
+} catch (error) {
   console.error(error.message);
-  return;
 }
-
-console.log(customer.id);
 ```
 
 ## Error types
@@ -42,19 +40,23 @@ import {
 ## Example
 
 ```typescript
-const [checkout, error] = await paykit.checkouts.create({ ... });
-
-if (error instanceof ValidationError) {
-  return res.status(400).json({ error: error.message });
-}
-
-if (error instanceof ProviderNotSupportedError) {
-  return res.status(501).json({ error: 'Not supported by this provider' });
-}
-
-if (error) {
+try {
+  const checkout = await paykit.checkouts.create({
+    customer: 'cus_123',
+    item_id: 'price_123',
+    session_type: 'one_time',
+    quantity: 1,
+    success_url: 'https://example.com/success',
+    cancel_url: 'https://example.com/cancel',
+  });
+  redirect(checkout.payment_url);
+} catch (error) {
+  if (error instanceof ValidationError) {
+    return res.status(400).json({ error: error.message });
+  }
+  if (error instanceof ProviderNotSupportedError) {
+    return res.status(501).json({ error: 'Not supported by this provider' });
+  }
   return res.status(500).json({ error: 'Unexpected error' });
 }
-
-redirect(checkout.payment_url);
 ```

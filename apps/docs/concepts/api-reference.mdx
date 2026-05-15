@@ -3,31 +3,45 @@ title: API Reference
 description: Core resource types and methods.
 ---
 
-All methods return `[data, error]` tuples. See [Error Handling](/concepts/error-handling) for the pattern.
-
 ## Customer
 
 ```typescript
 interface Customer {
+  /** The unique identifier of the customer. */
   id: string;
+
+  /** The email address of the customer. */
   email: string;
+
+  /** The full name of the customer. */
   name: string;
+
+  /** The phone number of the customer. */
   phone: string;
+
+  /** Arbitrary key-value metadata attached to the customer. */
   metadata?: Record<string, string>;
+
+  /** Provider-specific or custom fields not covered by the unified model. */
+  custom_fields?: Record<string, unknown>;
+
+  /** When the customer was created. */
   created_at: Date;
+
+  /** When the customer was last updated. Null if never updated. */
   updated_at: Date | null;
 }
 
-const [customer, error] = await paykit.customers.create({
+const customer = await paykit.customers.create({
   email: 'user@example.com',
   name: 'Jane Doe',
   phone: '+1234567890',
   metadata: { plan: 'pro' },
 });
 
-const [customer, error] = await paykit.customers.retrieve('cus_123');
+const customer = await paykit.customers.retrieve('cus_123');
 
-const [customer, error] = await paykit.customers.update('cus_123', {
+const customer = await paykit.customers.update('cus_123', {
   name: 'Jane Smith',
 });
 ```
@@ -36,17 +50,35 @@ const [customer, error] = await paykit.customers.update('cus_123', {
 
 ```typescript
 interface Checkout {
+  /** The unique identifier of the checkout session. */
   id: string;
-  customer: Payee;         // string ID or { email: string }
+
+  /** The customer — either a customer ID string or an object with an email. */
+  customer: Payee;
+
+  /** The URL to redirect the customer to for payment. */
   payment_url: string;
+
+  /** Arbitrary key-value metadata attached to the session. Null if none. */
   metadata: Record<string, string> | null;
+
+  /** Whether this is a one-time payment or recurring subscription. */
   session_type: 'one_time' | 'recurring';
+
+  /** The products included in this checkout. */
   products: Array<{ id: string; quantity: number }>;
+
+  /** ISO 4217 currency code (e.g. USD, NGN). */
   currency: string;
+
+  /** Total amount in the smallest currency unit (e.g. cents, kobo). */
   amount: number;
+
+  /** Subscription billing details, if session_type is recurring. */
+  subscription?: CheckoutSubscription | null;
 }
 
-const [checkout, error] = await paykit.checkouts.create({
+const checkout = await paykit.checkouts.create({
   customer: 'cus_123',           // or { email: 'user@example.com' }
   item_id: 'price_123',
   session_type: 'one_time',
@@ -57,7 +89,7 @@ const [checkout, error] = await paykit.checkouts.create({
   provider_metadata: { /* typed per provider */ },
 });
 
-const [checkout, error] = await paykit.checkouts.retrieve('cs_123');
+const checkout = await paykit.checkouts.retrieve('cs_123');
 ```
 
 ## Subscription
@@ -68,61 +100,135 @@ type SubscriptionBillingInterval =
   | { type: 'custom'; durationMs: number };
 
 interface Subscription {
+  /** The unique identifier of the subscription. */
   id: string;
+
+  /** The customer — either a customer ID string or an object with an email. */
   customer: Payee;
+
+  /** Recurring amount in the smallest currency unit. */
   amount: number;
+
+  /** ISO 4217 currency code. */
   currency: string;
+
+  /** Current lifecycle status of the subscription. */
   status: 'active' | 'past_due' | 'canceled' | 'expired' | 'pending';
+
+  /** Start of the current billing period. */
   current_period_start: Date;
+
+  /** End of the current billing period (next renewal date). */
   current_period_end: Date;
+
+  /** The provider item or plan ID this subscription is tied to. */
   item_id: string;
+
+  /** How often the subscription renews. Custom intervals use durationMs. */
   billing_interval: SubscriptionBillingInterval;
+
+  /** Arbitrary key-value metadata. Null if none. */
   metadata: Record<string, string> | null;
+
+  /** Provider-specific or custom fields. Null if none. */
+  custom_fields: Record<string, unknown> | null;
+
+  /** Whether the subscription requires user action (e.g. 3DS). */
+  requires_action: boolean;
+
+  /** Redirect URL if action is required. Null otherwise. */
+  payment_url: string | null;
 }
 
-const [subscription, error] = await paykit.subscriptions.create({
+const subscription = await paykit.subscriptions.create({
   customer: 'cus_123',
   item_id: 'price_123',
   metadata: { plan: 'pro' },
 });
 
-const [subscription, error] = await paykit.subscriptions.cancel('sub_123');
+const subscription = await paykit.subscriptions.retrieve('sub_123');
+
+const subscription = await paykit.subscriptions.cancel('sub_123');
 ```
 
 ## Payment
 
 ```typescript
 interface Payment {
+  /** The unique identifier of the payment (reference). */
   id: string;
+
+  /** Amount in the smallest currency unit (e.g. cents, kobo). */
   amount: number;
+
+  /** ISO 4217 currency code. */
   currency: string;
+
+  /** The customer — either a customer ID string or an object with an email. */
   customer: Payee;
-  status: 'pending' | 'processing' | 'requires_action' | 'requires_capture' | 'succeeded' | 'canceled' | 'failed';
+
+  /**
+   * Current status of the payment.
+   * - pending: created but not yet processed
+   * - processing: being processed by the provider
+   * - requires_action: needs user action (3DS, bank verification, etc.)
+   * - requires_capture: authorized but not yet captured
+   * - succeeded: payment completed successfully
+   * - canceled: payment was canceled
+   * - failed: payment failed
+   */
+  status:
+    | 'pending'
+    | 'processing'
+    | 'requires_action'
+    | 'requires_capture'
+    | 'succeeded'
+    | 'canceled'
+    | 'failed';
+
+  /** Arbitrary key-value metadata attached to the payment. */
   metadata: Record<string, string>;
+
+  /** The provider item ID linked to this payment. Null if not applicable. */
   item_id: string | null;
+
+  /** Whether the payment is waiting for user action before it can proceed. */
   requires_action: boolean;
+
+  /** URL to redirect the user to if requires_action is true. Null otherwise. */
   payment_url: string | null;
 }
 
-const [payment, error] = await paykit.payments.retrieve('pay_123');
+const payment = await paykit.payments.retrieve('pay_123');
 ```
 
 ## Refund
 
 ```typescript
 interface Refund {
+  /** The unique identifier of the refund. */
   id: string;
+
+  /** Amount refunded in the smallest currency unit. */
   amount: number;
+
+  /** ISO 4217 currency code. */
   currency: string;
+
+  /** Human-readable reason for the refund. Null if not provided. */
   reason: string | null;
+
+  /** Arbitrary key-value metadata attached to the refund. Null if none. */
   metadata: Record<string, string> | null;
 }
 
-const [refund, error] = await paykit.refunds.create({
+const refund = await paykit.refunds.create({
   payment_id: 'pay_123',
   amount: 1000,
   reason: 'requested_by_customer',
-  provider_metadata: { /* typed per provider */ },
+  provider_metadata: {
+    /* typed per provider */
+  },
 });
 ```
 
@@ -130,15 +236,49 @@ const [refund, error] = await paykit.refunds.create({
 
 ```typescript
 interface Invoice {
+  /** The unique identifier of the invoice. */
   id: string;
+
+  /** The customer — either a customer ID string or an object with an email. */
   customer: Payee;
+
+  /** The subscription this invoice belongs to. Null for one-time payments. */
   subscription_id: string | null;
+
+  /** Whether this invoice is for a one-time payment or a recurring subscription. */
   billing_mode: 'one_time' | 'recurring';
+
+  /** Amount paid in the smallest currency unit (e.g. cents). */
   amount_paid: number;
+
+  /** ISO 4217 currency code (e.g. USD, EUR). */
   currency: string;
-  status: 'draft' | 'open' | 'paid' | 'void' | 'uncollectible';
+
+  /** Current status of the invoice. */
+  status: 'paid' | 'open';
+
+  /** ISO 8601 timestamp of when the invoice was paid. Null if unpaid. */
   paid_at: string | null;
+
+  /** Individual line items on the invoice. Null if not provided by the provider. */
   line_items: Array<{ id: string; quantity: number }> | null;
+
+  /** Arbitrary key-value metadata. Null if none. */
   metadata: Record<string, string> | null;
+
+  /** Provider-specific or custom fields. Null if none. */
+  custom_fields: Record<string, unknown> | null;
 }
+```
+
+## Payee
+
+A `Payee` is either a customer ID string or an object with an email:
+
+```typescript
+type Payee = string | { email: string };
+
+// Both are valid
+await paykit.checkouts.create({ customer: 'cus_123', ... });
+await paykit.checkouts.create({ customer: { email: 'user@example.com' }, ... });
 ```
