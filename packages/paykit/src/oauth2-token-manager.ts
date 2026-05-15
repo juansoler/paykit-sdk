@@ -30,7 +30,9 @@ export interface OAuth2TokenManagerConfig {
   /**
    * Adapter function to extract token and expiry from provider response
    */
-  responseAdapter: (response: Record<string, any>) => OAuth2TokenResponse;
+  responseAdapter: (
+    response: Record<string, any>,
+  ) => OAuth2TokenResponse;
 
   /**
    * Optional request body
@@ -59,9 +61,15 @@ export interface OAuth2TokenManagerConfig {
 export class OAuth2TokenManager {
   private _accessToken: string | null = null;
   private readonly config: Required<
-    Omit<OAuth2TokenManagerConfig, 'requestBody' | 'requestHeaders' | 'authHeaders'>
+    Omit<
+      OAuth2TokenManagerConfig,
+      'requestBody' | 'requestHeaders' | 'authHeaders'
+    >
   > &
-    Pick<OAuth2TokenManagerConfig, 'requestBody' | 'requestHeaders' | 'authHeaders'>;
+    Pick<
+      OAuth2TokenManagerConfig,
+      'requestBody' | 'requestHeaders' | 'authHeaders'
+    >;
 
   constructor(config: OAuth2TokenManagerConfig) {
     this.config = {
@@ -76,7 +84,8 @@ export class OAuth2TokenManager {
   getToken = async (): Promise<string> => {
     // Check if cached token is still valid
     if (this._accessToken) {
-      const [token, , expiryStr] = this._accessToken.split('::paykit::');
+      const [token, , expiryStr] =
+        this._accessToken.split('::paykit::');
       const expiry = parseInt(expiryStr || '0', 10);
       if (expiry > Date.now()) {
         return token;
@@ -90,34 +99,54 @@ export class OAuth2TokenManager {
 
     const headers = {
       Authorization: `Basic ${credentials}`,
-      ...(this.config.requestHeaders && { ...this.config.requestHeaders }),
+      ...(this.config.requestHeaders && {
+        ...this.config.requestHeaders,
+      }),
     };
 
-    const response = await this.config.client.post(this.config.tokenEndpoint, {
-      headers,
-      ...(this.config.requestBody && { body: this.config.requestBody }),
-    });
+    const response = await this.config.client.post(
+      this.config.tokenEndpoint,
+      {
+        headers,
+        ...(this.config.requestBody && {
+          body: this.config.requestBody,
+        }),
+      },
+    );
 
     if (!response.ok) {
-      throw new OperationFailedError('getAccessToken', this.config.provider, {
-        cause: new Error(
-          `Failed to obtain access token: ${JSON.stringify(response.value || response.error)}`,
-        ),
-      });
+      throw new OperationFailedError(
+        'getAccessToken',
+        this.config.provider,
+        {
+          cause: new Error(
+            `Failed to obtain access token: ${JSON.stringify(response.value || response.error)}`,
+          ),
+        },
+      );
     }
 
     // Extract token and expiry using adapter
-    const tokenData = this.config.responseAdapter(response.value as Record<string, any>);
+    const tokenData = this.config.responseAdapter(
+      response.value as Record<string, any>,
+    );
 
     if (!tokenData.accessToken || !tokenData.expiresIn) {
-      throw new OperationFailedError('getAccessToken', this.config.provider, {
-        cause: new Error('Invalid token response: missing accessToken or expiresIn'),
-      });
+      throw new OperationFailedError(
+        'getAccessToken',
+        this.config.provider,
+        {
+          cause: new Error(
+            'Invalid token response: missing accessToken or expiresIn',
+          ),
+        },
+      );
     }
 
     // Cache token with expiry (subtract buffer for safety)
     const expiryTime =
-      Date.now() + (tokenData.expiresIn - this.config.expiryBuffer) * 1000;
+      Date.now() +
+      (tokenData.expiresIn - this.config.expiryBuffer) * 1000;
     this._accessToken = `${tokenData.accessToken}::paykit::${expiryTime}`;
 
     return tokenData.accessToken;

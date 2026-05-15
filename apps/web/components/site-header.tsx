@@ -32,7 +32,11 @@ export const SiteHeader = ({ showDocs = false }: SiteHeaderProps) => {
       </Button>
 
       <Button asChild variant="ghost" size="sm">
-        <Link href="https://x.com/usepaykit" target="_blank" rel="noopener noreferrer">
+        <Link
+          href="https://x.com/usepaykit"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <svg
             className="size-4"
             role="img"

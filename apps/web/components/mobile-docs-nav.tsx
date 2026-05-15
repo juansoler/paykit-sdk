@@ -36,7 +36,9 @@ export function MobileDocsNav({ config }: MobileDocsNavProps) {
       </Sheet.Trigger>
       <Sheet.Content side="left" className="w-80 p-0">
         <Sheet.Header className="p-6 pb-4">
-          <Sheet.Title className="text-left">Documentation</Sheet.Title>
+          <Sheet.Title className="text-left">
+            Documentation
+          </Sheet.Title>
         </Sheet.Header>
         <div className="h-[calc(100vh-8rem)] overflow-auto px-6 pb-6">
           <div className="space-y-6">

@@ -34,7 +34,8 @@ export interface ProviderMetadataRegistry {
 }
 
 export interface PayKitProvider<
-  TMetadata extends ProviderMetadataRegistry = ProviderMetadataRegistry,
+  TMetadata extends
+    ProviderMetadataRegistry = ProviderMetadataRegistry,
   TNativeClient = any,
   TRawEvents extends Record<string, any> = Record<string, any>,
 > {
@@ -94,7 +95,10 @@ export interface PayKitProvider<
   ): Promise<Payment>;
   retrievePayment(id: string): Promise<Payment | null>;
   deletePayment(id: string): Promise<null>;
-  capturePayment(id: string, params: CapturePaymentSchema): Promise<Payment>;
+  capturePayment(
+    id: string,
+    params: CapturePaymentSchema,
+  ): Promise<Payment>;
   cancelPayment(id: string): Promise<Payment>;
 
   /** Refund */
@@ -118,10 +122,13 @@ export class AbstractPayKitProvider {
     const { error } = schema.safeParse(options);
 
     if (error) {
-      throw new ConfigurationError(`Invalid ${providerName} configuration`, {
-        provider: providerName,
-        missingKeys: Object.keys(error.flatten().fieldErrors ?? {}),
-      });
+      throw new ConfigurationError(
+        `Invalid ${providerName} configuration`,
+        {
+          provider: providerName,
+          missingKeys: Object.keys(error.flatten().fieldErrors ?? {}),
+        },
+      );
     }
   }
 }

@@ -1,5 +1,9 @@
 import { endpoints } from '@/lib/paykit';
-import type { EndpointArgs, EndpointHandler, EndpointPath } from '@paykit-sdk/core';
+import type {
+  EndpointArgs,
+  EndpointHandler,
+  EndpointPath,
+} from '@paykit-sdk/core';
 import { NextResponse, NextRequest } from 'next/server';
 
 export async function POST(
@@ -10,10 +14,15 @@ export async function POST(
 
   const endpoint = ('/' + endpointArray.join('/')) as EndpointPath;
 
-  const handler = endpoints[endpoint] as EndpointHandler<typeof endpoint>;
+  const handler = endpoints[endpoint] as EndpointHandler<
+    typeof endpoint
+  >;
 
   if (!handler) {
-    return NextResponse.json({ message: 'Endpoint not found' }, { status: 404 });
+    return NextResponse.json(
+      { message: 'Endpoint not found' },
+      { status: 404 },
+    );
   }
 
   const body = await request.json();
@@ -25,7 +34,10 @@ export async function POST(
     return NextResponse.json({ result });
   } catch (error) {
     console.error('PayKit API Error:', error);
-    const message = error instanceof Error ? error.message : 'Internal server error';
+    const message =
+      error instanceof Error
+        ? error.message
+        : 'Internal server error';
     return NextResponse.json({ message }, { status: 500 });
   }
 }

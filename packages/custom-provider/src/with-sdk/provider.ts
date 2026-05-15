@@ -36,12 +36,14 @@ type WithProviderRawEvents = {
   [K in string as `provider.${K}`]: any;
 };
 
-export interface WithProviderMetadata extends ProviderMetadataRegistry {}
+export interface WithProviderMetadata
+  extends ProviderMetadataRegistry {}
 
 /**
  * @description Adjust these keys to match the credentials required by the official SDK.
  */
-export interface WithProviderSDKOptions extends PaykitProviderOptions {
+export interface WithProviderSDKOptions
+  extends PaykitProviderOptions {
   /**
    * The API key for the provider
    */
@@ -63,7 +65,8 @@ const providerName = 'with-sdk';
  */
 export class WithProviderSDK
   extends AbstractPayKitProvider
-  implements PayKitProvider<WithProviderMetadata, any, WithProviderRawEvents>
+  implements
+    PayKitProvider<WithProviderMetadata, any, WithProviderRawEvents>
 {
   readonly providerName = providerName;
   private sdk: SomeProviderSDK | null = null;
@@ -76,12 +79,16 @@ export class WithProviderSDK
 
   private _ni(m: string): Promise<never> {
     return Promise.reject(
-      new NotImplementedError(m, this.providerName, { futureSupport: true }),
+      new NotImplementedError(m, this.providerName, {
+        futureSupport: true,
+      }),
     );
   }
   private _ns(m: string, r: string): Promise<never> {
     return Promise.reject(
-      new ProviderNotSupportedError(m, this.providerName, { reason: r }),
+      new ProviderNotSupportedError(m, this.providerName, {
+        reason: r,
+      }),
     );
   }
 
@@ -98,8 +105,9 @@ export class WithProviderSDK
    *   throw new OperationFailedError("SDK Error", this.providerName, { cause: e });
    * }
    */
-  createCheckout = (params: CreateCheckoutSchema): Promise<Checkout> =>
-    this._ni('createCheckout');
+  createCheckout = (
+    params: CreateCheckoutSchema,
+  ): Promise<Checkout> => this._ni('createCheckout');
 
   retrieveCheckout = (id: string): Promise<Checkout> =>
     this._ni('retrieveCheckout');
@@ -109,7 +117,8 @@ export class WithProviderSDK
     params: UpdateCheckoutSchema,
   ): Promise<Checkout> => this._ni('updateCheckout');
 
-  deleteCheckout = (id: string): Promise<null> => this._ni('deleteCheckout');
+  deleteCheckout = (id: string): Promise<null> =>
+    this._ni('deleteCheckout');
 
   createPayment = (params: CreatePaymentSchema): Promise<Payment> =>
     this._ni('createPayment');
@@ -117,20 +126,25 @@ export class WithProviderSDK
   retrievePayment = (id: string): Promise<Payment | null> =>
     this._ni('retrievePayment');
 
-  updatePayment = (id: string, params: UpdatePaymentSchema): Promise<Payment> =>
-    this._ni('updatePayment');
+  updatePayment = (
+    id: string,
+    params: UpdatePaymentSchema,
+  ): Promise<Payment> => this._ni('updatePayment');
 
-  deletePayment = (id: string): Promise<null> => this._ni('deletePayment');
+  deletePayment = (id: string): Promise<null> =>
+    this._ni('deletePayment');
 
   capturePayment = (
     id: string,
     params: CapturePaymentSchema,
   ): Promise<Payment> => this._ni('capturePayment');
 
-  cancelPayment = (id: string): Promise<Payment> => this._ni('cancelPayment');
+  cancelPayment = (id: string): Promise<Payment> =>
+    this._ni('cancelPayment');
 
-  createCustomer = (params: CreateCustomerParams): Promise<Customer> =>
-    this._ni('createCustomer');
+  createCustomer = (
+    params: CreateCustomerParams,
+  ): Promise<Customer> => this._ni('createCustomer');
 
   retrieveCustomer = (id: string): Promise<Customer> =>
     this._ni('retrieveCustomer');
@@ -140,7 +154,8 @@ export class WithProviderSDK
     params: UpdateCustomerParams,
   ): Promise<Customer> => this._ni('updateCustomer');
 
-  deleteCustomer = (id: string): Promise<null> => this._ni('deleteCustomer');
+  deleteCustomer = (id: string): Promise<null> =>
+    this._ni('deleteCustomer');
 
   createSubscription = (
     params: CreateSubscriptionSchema,

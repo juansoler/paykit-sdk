@@ -23,10 +23,13 @@ export class PaykitAgenticAdapter {
     const { error } = providerSchema.safeParse(provider);
 
     if (error) {
-      throw new ConfigurationError(`Invalid ${provider.providerName} configuration`, {
-        provider: provider.providerName,
-        missingKeys: Object.keys(error.flatten().fieldErrors ?? {}),
-      });
+      throw new ConfigurationError(
+        `Invalid ${provider.providerName} configuration`,
+        {
+          provider: provider.providerName,
+          missingKeys: Object.keys(error.flatten().fieldErrors ?? {}),
+        },
+      );
     }
   }
 
@@ -53,7 +56,12 @@ export class PaykitAgenticAdapter {
           source: 'agentic',
           agent: {
             buyer: params.buyer,
-            items: [{ id: params.checkout.item_id, quantity: params.checkout.quantity }],
+            items: [
+              {
+                id: params.checkout.item_id,
+                quantity: params.checkout.quantity,
+              },
+            ],
             fulfillment_address: {
               name: `${params.buyer.first_name} ${params.buyer.last_name}`,
               line_one: line1,
@@ -72,7 +80,8 @@ export class PaykitAgenticAdapter {
     return agenticCheckoutSession$InboundSchema(
       checkout,
       parseJSON(
-        JSON.parse(checkout.metadata?.PAYKIT_METADATA_KEY ?? '{}').agent ?? '{}',
+        JSON.parse(checkout.metadata?.PAYKIT_METADATA_KEY ?? '{}')
+          .agent ?? '{}',
         createAgenticCheckoutSessionParamsSchema,
       ),
       this.provider.providerName,
@@ -107,11 +116,15 @@ export class PaykitAgenticAdapter {
     throw new Error('Not Implemented');
   };
 
-  cancelAgenticCheckoutSession = async (id: string): Promise<AgenticCheckoutSession> => {
+  cancelAgenticCheckoutSession = async (
+    id: string,
+  ): Promise<AgenticCheckoutSession> => {
     throw new Error('Not Implemented');
   };
 
-  async delegatePayment(params: DelegatePaymentParams): Promise<DelegatePaymentResponse> {
+  async delegatePayment(
+    params: DelegatePaymentParams,
+  ): Promise<DelegatePaymentResponse> {
     throw new Error('Not implemented');
   }
 }

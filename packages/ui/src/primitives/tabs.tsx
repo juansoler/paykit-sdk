@@ -58,7 +58,10 @@ const Content = ({
   return (
     <TabsPrimitive.Content
       data-slot="tabs-content"
-      className={cn('bg-card flex-1 rounded-lg p-4 shadow-sm outline-none', className)}
+      className={cn(
+        'bg-card flex-1 rounded-lg p-4 shadow-sm outline-none',
+        className,
+      )}
       {...props}
     />
   );

@@ -126,7 +126,8 @@ export async function GET() {
             <br />
             <span
               style={{
-                background: 'linear-gradient(to right, #2563eb, #9333ea, #db2777)',
+                background:
+                  'linear-gradient(to right, #2563eb, #9333ea, #db2777)',
                 backgroundClip: 'text',
                 color: 'transparent',
               }}
@@ -174,7 +175,9 @@ export async function GET() {
               TypeScript • React • Node.js
             </span>
           </div>
-          <span style={{ fontSize: '18px', color: '#52525b' }}>usepaykit.dev</span>
+          <span style={{ fontSize: '18px', color: '#52525b' }}>
+            usepaykit.dev
+          </span>
         </div>
       </div>
     ),

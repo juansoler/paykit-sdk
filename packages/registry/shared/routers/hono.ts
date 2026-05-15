@@ -1,5 +1,9 @@
 import { endpoints, paykit } from '@/lib/paykit';
-import type { EndpointArgs, EndpointHandler, EndpointPath } from '@paykit-sdk/core';
+import type {
+  EndpointArgs,
+  EndpointHandler,
+  EndpointPath,
+} from '@paykit-sdk/core';
 import { Hono } from 'hono';
 
 export const paykitRouter = new Hono();
@@ -21,7 +25,10 @@ paykitRouter.post('/*', async c => {
     return c.json({ result });
   } catch (error) {
     console.error('PayKit API Error:', error);
-    const message = error instanceof Error ? error.message : 'Internal server error';
+    const message =
+      error instanceof Error
+        ? error.message
+        : 'Internal server error';
     return c.json({ message }, 500);
   }
 });

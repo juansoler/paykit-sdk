@@ -165,7 +165,10 @@ type PayPalRawEventsSource = {
     'PAYMENT.CAPTURE.DECLINED',
     PayPalCapture
   >;
-  'PAYMENT.CAPTURE.PENDING': PayPalWebhookEvent<'PAYMENT.CAPTURE.PENDING', PayPalCapture>;
+  'PAYMENT.CAPTURE.PENDING': PayPalWebhookEvent<
+    'PAYMENT.CAPTURE.PENDING',
+    PayPalCapture
+  >;
   'PAYMENT.CAPTURE.REFUNDED': PayPalWebhookEvent<
     'PAYMENT.CAPTURE.REFUNDED',
     PayPalCapture
@@ -174,12 +177,24 @@ type PayPalRawEventsSource = {
     'PAYMENT.CAPTURE.REVERSED',
     PayPalCapture
   >;
-  'PAYMENT.REFUND.PENDING': PayPalWebhookEvent<'PAYMENT.REFUND.PENDING', PayPalRefund>;
-  'PAYMENT.REFUND.FAILED': PayPalWebhookEvent<'PAYMENT.REFUND.FAILED', PayPalRefund>;
+  'PAYMENT.REFUND.PENDING': PayPalWebhookEvent<
+    'PAYMENT.REFUND.PENDING',
+    PayPalRefund
+  >;
+  'PAYMENT.REFUND.FAILED': PayPalWebhookEvent<
+    'PAYMENT.REFUND.FAILED',
+    PayPalRefund
+  >;
 
   // Orders
-  'CHECKOUT.ORDER.APPROVED': PayPalWebhookEvent<'CHECKOUT.ORDER.APPROVED', PayPalOrder>;
-  'CHECKOUT.ORDER.COMPLETED': PayPalWebhookEvent<'CHECKOUT.ORDER.COMPLETED', PayPalOrder>;
+  'CHECKOUT.ORDER.APPROVED': PayPalWebhookEvent<
+    'CHECKOUT.ORDER.APPROVED',
+    PayPalOrder
+  >;
+  'CHECKOUT.ORDER.COMPLETED': PayPalWebhookEvent<
+    'CHECKOUT.ORDER.COMPLETED',
+    PayPalOrder
+  >;
   'CHECKOUT.PAYMENT-APPROVAL.REVERSED': PayPalWebhookEvent<
     'CHECKOUT.PAYMENT-APPROVAL.REVERSED',
     PayPalOrder
@@ -265,4 +280,5 @@ type PayPalRawEventsSource = {
   'PAYMENT.SALE.REVERSED': PayPalWebhookEvent<'PAYMENT.SALE.REVERSED'>;
 };
 
-export type PayPalWebhookPayload = PayPalRawEvents[keyof PayPalRawEvents];
+export type PayPalWebhookPayload =
+  PayPalRawEvents[keyof PayPalRawEvents];

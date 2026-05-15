@@ -1,7 +1,12 @@
 import { validateRequiredKeys } from '@paykit-sdk/core';
-import { WithoutProviderSDK, WithoutProviderSDKOptions } from './provider';
+import {
+  WithoutProviderSDK,
+  WithoutProviderSDKOptions,
+} from './provider';
 
-export const createWithoutProviderSDK = (config: WithoutProviderSDKOptions) => {
+export const createWithoutProviderSDK = (
+  config: WithoutProviderSDKOptions,
+) => {
   return new WithoutProviderSDK(config);
 };
 

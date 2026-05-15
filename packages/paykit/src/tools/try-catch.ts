@@ -15,7 +15,9 @@ export async function tryCatchAsync<T, E = Error>(
   }
 }
 
-export function tryCatchSync<T, E = Error>(fn: () => T): Result<T, E> {
+export function tryCatchSync<T, E = Error>(
+  fn: () => T,
+): Result<T, E> {
   try {
     const data = fn();
     return [data, undefined];

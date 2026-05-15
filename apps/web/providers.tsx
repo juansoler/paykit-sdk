@@ -5,7 +5,11 @@ import { Toaster } from '@paykit-sdk/ui';
 import { ThemeProvider } from 'next-themes';
 import { initMixpanel } from './lib/analytics';
 
-export const AppProviders = ({ children }: { children: React.ReactNode }) => {
+export const AppProviders = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
   React.useEffect(() => {
     initMixpanel();
   }, []);

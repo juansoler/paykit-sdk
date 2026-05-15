@@ -1,7 +1,11 @@
 'use client';
 
 import * as React from 'react';
-import { useCustomer, useSubscription, useRefund } from '@paykit-sdk/react';
+import {
+  useCustomer,
+  useSubscription,
+  useRefund,
+} from '@paykit-sdk/react';
 
 export const CustomerManager = () => {
   const { create: createCustomer } = useCustomer();
@@ -10,7 +14,8 @@ export const CustomerManager = () => {
   const { create: createRefund } = useRefund();
 
   const [customerId, setCustomerId] = React.useState<string>();
-  const [subscriptionId, setSubscriptionId] = React.useState<string>();
+  const [subscriptionId, setSubscriptionId] =
+    React.useState<string>();
   const [paymentId, setPaymentId] = React.useState<string>();
 
   const handleCreateCustomer = async () => {
@@ -86,12 +91,19 @@ export const CustomerManager = () => {
 
   return (
     <div className="bg-background flex flex-col gap-4 rounded-lg p-4">
-      <h2 className="text-foreground text-2xl font-bold">Customer Manager</h2>
+      <h2 className="text-foreground text-2xl font-bold">
+        Customer Manager
+      </h2>
 
       {/* Customer Section */}
       <section className="flex flex-col gap-2">
-        <h3 className="text-foreground text-lg font-medium">Customer</h3>
-        <button onClick={handleCreateCustomer} disabled={createCustomer.loading}>
+        <h3 className="text-foreground text-lg font-medium">
+          Customer
+        </h3>
+        <button
+          onClick={handleCreateCustomer}
+          disabled={createCustomer.loading}
+        >
           {createCustomer.loading ? 'Creating...' : 'Create Customer'}
         </button>
         {customerId && <p>Customer ID: {customerId}</p>}
@@ -99,30 +111,42 @@ export const CustomerManager = () => {
 
       {/* Subscription Section */}
       <section className="flex flex-col gap-2">
-        <h3 className="text-foreground text-lg font-medium">Subscription</h3>
+        <h3 className="text-foreground text-lg font-medium">
+          Subscription
+        </h3>
         <button
           onClick={handleCreateSubscription}
           disabled={!customerId || createSubscription.loading}
         >
-          {createSubscription.loading ? 'Creating...' : 'Create Subscription'}
+          {createSubscription.loading
+            ? 'Creating...'
+            : 'Create Subscription'}
         </button>
         <button
           onClick={handleCancelSubscription}
           disabled={!subscriptionId || cancelSubscription.loading}
         >
-          {cancelSubscription.loading ? 'Cancelling...' : 'Cancel Subscription'}
+          {cancelSubscription.loading
+            ? 'Cancelling...'
+            : 'Cancel Subscription'}
         </button>
         {subscriptionId && <p>Subscription ID: {subscriptionId}</p>}
       </section>
 
       {/* Refund Section */}
       <section className="flex flex-col gap-2">
-        <h3 className="text-foreground text-lg font-medium">Refund</h3>
+        <h3 className="text-foreground text-lg font-medium">
+          Refund
+        </h3>
         <input
           type="text"
           placeholder="Enter Payment ID"
           value={paymentId}
-          onChange={e => setPaymentId((e.target as HTMLInputElement).value as string)}
+          onChange={e =>
+            setPaymentId(
+              (e.target as HTMLInputElement).value as string,
+            )
+          }
           className="bg-background border-input rounded-md border p-2"
         />
 
@@ -130,7 +154,9 @@ export const CustomerManager = () => {
           onClick={handleCreateRefund}
           disabled={!paymentId || createRefund.loading}
         >
-          {createRefund.loading ? 'Processing...' : 'Create $10 Refund'}
+          {createRefund.loading
+            ? 'Processing...'
+            : 'Create $10 Refund'}
         </button>
       </section>
     </div>

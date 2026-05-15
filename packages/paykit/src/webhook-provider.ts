@@ -19,9 +19,15 @@ export interface StandardEventHandlers {
   'customer.created': (event: CustomerCreated) => Promise<any>;
   'customer.updated': (event: CustomerUpdated) => Promise<any>;
   'customer.deleted': (event: CustomerDeleted) => Promise<any>;
-  'subscription.created': (event: SubscriptionCreated) => Promise<any>;
-  'subscription.updated': (event: SubscriptionUpdated) => Promise<any>;
-  'subscription.canceled': (event: SubscriptionCanceled) => Promise<any>;
+  'subscription.created': (
+    event: SubscriptionCreated,
+  ) => Promise<any>;
+  'subscription.updated': (
+    event: SubscriptionUpdated,
+  ) => Promise<any>;
+  'subscription.canceled': (
+    event: SubscriptionCanceled,
+  ) => Promise<any>;
   'payment.created': (event: PaymentCreated) => Promise<any>;
   'payment.updated': (event: PaymentUpdated) => Promise<any>;
   'payment.canceled': (event: PaymentCanceled) => Promise<any>;
@@ -67,7 +73,8 @@ export type WebhookHandlerConfig = {
 export class Webhook<
   TRawEvents extends Record<string, any> = Record<string, any>,
 > {
-  private handlers: Map<string, ((event: any) => Promise<void>)[]> = new Map();
+  private handlers: Map<string, ((event: any) => Promise<void>)[]> =
+    new Map();
   private config: WebhookSetupConfig<TRawEvents> | null = null;
 
   setup(config: WebhookSetupConfig<TRawEvents>): Webhook<TRawEvents> {
@@ -84,7 +91,9 @@ export class Webhook<
         : never,
   ): Webhook<TRawEvents> {
     if (!this.config) {
-      throw new WebhookError('Webhook not configured. Call setup() first.');
+      throw new WebhookError(
+        'Webhook not configured. Call setup() first.',
+      );
     }
 
     const typeStr = eventType as string;
@@ -98,7 +107,9 @@ export class Webhook<
 
   async handle(dto: WebhookHandlerConfig): Promise<void> {
     if (!this.config) {
-      throw new WebhookError('Webhook not configured. Call setup() first.');
+      throw new WebhookError(
+        'Webhook not configured. Call setup() first.',
+      );
     }
 
     const { webhookSecret, provider } = this.config;

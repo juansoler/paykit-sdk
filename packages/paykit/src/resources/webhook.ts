@@ -46,8 +46,10 @@ export type InvoiceGenerated = WebhookEvent<Invoice>;
 /**
  * Raw Provider-Specific Event Escape Hatch
  */
-export interface RawWebhookEvent<TProvider extends string = string, TData = any>
-  extends WebhookEvent<TData> {
+export interface RawWebhookEvent<
+  TProvider extends string = string,
+  TData = any,
+> extends WebhookEvent<TData> {
   type: `${TProvider}.${string}`;
   is_raw: true;
 }
@@ -68,5 +70,6 @@ export type WebhookEventPayload<
   | InvoiceGenerated
   | { [K in keyof TRawMap]: WebhookEvent<TRawMap[K]> }[keyof TRawMap];
 
-export const paykitEvent$InboundSchema = <Resource>(event: WebhookEvent<Resource>) =>
-  event;
+export const paykitEvent$InboundSchema = <Resource>(
+  event: WebhookEvent<Resource>,
+) => event;

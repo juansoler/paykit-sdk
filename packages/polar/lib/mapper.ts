@@ -23,7 +23,9 @@ import { Subscription } from '@polar-sh/sdk/models/components/subscription';
 /**
  * Checkout
  */
-export const paykitCheckout$InboundSchema = (checkout: Checkout): PaykitCheckout => {
+export const paykitCheckout$InboundSchema = (
+  checkout: Checkout,
+): PaykitCheckout => {
   return {
     id: checkout.id,
     payment_url: checkout.url,
@@ -31,8 +33,13 @@ export const paykitCheckout$InboundSchema = (checkout: Checkout): PaykitCheckout
       ? checkout.customerId
       : { email: checkout.customerEmail ?? '' },
     session_type: checkout.subscriptionId ? 'recurring' : 'one_time',
-    products: checkout.products.map(product => ({ id: product.id, quantity: 1 })),
-    metadata: omitInternalMetadata(checkout.metadata as PaykitMetadata) ?? null,
+    products: checkout.products.map(product => ({
+      id: product.id,
+      quantity: 1,
+    })),
+    metadata:
+      omitInternalMetadata(checkout.metadata as PaykitMetadata) ??
+      null,
     currency: checkout.currency,
     amount: checkout.amount,
   };
@@ -41,9 +48,13 @@ export const paykitCheckout$InboundSchema = (checkout: Checkout): PaykitCheckout
 /**
  * Customer
  */
-export const paykitCustomer$InboundSchema = (customer: Customer): PaykitCustomer => {
+export const paykitCustomer$InboundSchema = (
+  customer: Customer,
+): PaykitCustomer => {
   const phone =
-    JSON.parse((customer.metadata?.[PAYKIT_METADATA_KEY] as string) ?? '{}').phone ?? '';
+    JSON.parse(
+      (customer.metadata?.[PAYKIT_METADATA_KEY] as string) ?? '{}',
+    ).phone ?? '';
 
   return {
     id: customer.id,
@@ -69,7 +80,8 @@ const toPaykitSubscriptionStatus = (
   status: Subscription['status'],
 ): SubscriptionStatus => {
   if (status === 'active') return 'active';
-  if (status === 'past_due' || status === 'incomplete') return 'past_due';
+  if (status === 'past_due' || status === 'incomplete')
+    return 'past_due';
   if (status === 'canceled' || status === 'unpaid') return 'canceled';
   if (status === 'incomplete_expired') return 'expired';
   throw new Error(`Unhandled status: ${status}`);
@@ -106,7 +118,9 @@ export const paykitSubscription$InboundSchema = (
 
 type InvoicePayload = Order & { billingMode: BillingMode };
 
-export const paykitInvoice$InboundSchema = (invoice: InvoicePayload): PaykitInvoice => {
+export const paykitInvoice$InboundSchema = (
+  invoice: InvoicePayload,
+): PaykitInvoice => {
   const status = (() => {
     if (invoice.status == 'paid') return 'paid';
     return 'open';
@@ -135,7 +149,9 @@ export const paykitInvoice$InboundSchema = (invoice: InvoicePayload): PaykitInvo
 /**
  * Payment
  */
-export const paykitPayment$InboundSchema = (checkout: Checkout): Payment => {
+export const paykitPayment$InboundSchema = (
+  checkout: Checkout,
+): Payment => {
   const statusMap: Record<CheckoutStatus, PaymentStatus> = {
     open: 'pending',
     expired: 'canceled',
@@ -152,8 +168,10 @@ export const paykitPayment$InboundSchema = (checkout: Checkout): Payment => {
       ? checkout.customerId
       : { email: checkout.customerEmail ?? '' },
     status: statusMap[checkout.status],
-    metadata: omitInternalMetadata(checkout.metadata as PaykitMetadata) ?? {},
-    item_id: checkout.products.length > 0 ? checkout.products[0].id : null,
+    metadata:
+      omitInternalMetadata(checkout.metadata as PaykitMetadata) ?? {},
+    item_id:
+      checkout.products.length > 0 ? checkout.products[0].id : null,
     requires_action: checkout.status === 'open' ? true : false,
     payment_url: checkout.status === 'open' ? checkout.url : null,
   };
@@ -162,7 +180,9 @@ export const paykitPayment$InboundSchema = (checkout: Checkout): Payment => {
 /**
  * Refund
  */
-export const paykitRefund$InboundSchema = (refund: Refund): PaykitRefund => {
+export const paykitRefund$InboundSchema = (
+  refund: Refund,
+): PaykitRefund => {
   return {
     id: refund.id,
     amount: refund.amount,

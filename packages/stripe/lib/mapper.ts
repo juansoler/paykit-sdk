@@ -30,14 +30,16 @@ export const paykitCheckout$InboundSchema = (
 ): Checkout => {
   let customer: Payee | null = null;
 
-  if (typeof checkout.customer === 'string') customer = checkout.customer;
+  if (typeof checkout.customer === 'string')
+    customer = checkout.customer;
   else if (checkout.customer?.id) customer = checkout.customer.id;
   else customer = { email: checkout.customer_email ?? '' };
 
   return {
     id: checkout.id,
     customer,
-    session_type: checkout.mode === 'subscription' ? 'recurring' : 'one_time',
+    session_type:
+      checkout.mode === 'subscription' ? 'recurring' : 'one_time',
     payment_url: checkout.url!,
     products: lineItems.map(item => ({
       id: item.id,
@@ -66,9 +68,11 @@ export const paykitCustomer$InboundSchema = (
     updated_at: null,
     custom_fields: {
       default_payment_method:
-        typeof customer.invoice_settings?.default_payment_method === 'string'
+        typeof customer.invoice_settings?.default_payment_method ===
+        'string'
           ? customer.invoice_settings.default_payment_method
-          : (customer.invoice_settings?.default_payment_method?.id ?? null),
+          : (customer.invoice_settings?.default_payment_method?.id ??
+            null),
       balance: customer.balance,
       currency: customer.currency ?? null,
       delinquent: customer.delinquent ?? false,
@@ -83,7 +87,8 @@ export const paykitSubscription$InboundSchema = (
   subscription: Stripe.Subscription,
 ): Subscription => {
   const status = ((): Subscription['status'] => {
-    if (['active', 'trialing'].includes(subscription.status)) return 'active';
+    if (['active', 'trialing'].includes(subscription.status))
+      return 'active';
     if (
       ['incomplete_expired', 'incomplete', 'past_due'].includes(
         subscription.status,
@@ -94,7 +99,9 @@ export const paykitSubscription$InboundSchema = (
     if (['canceled'].includes(subscription.status)) return 'canceled';
     if (['expired'].includes(subscription.status)) return 'expired';
 
-    console.log(`Unknown subscription status: ${subscription.status}`);
+    console.log(
+      `Unknown subscription status: ${subscription.status}`,
+    );
     return 'pending';
   })();
 
@@ -157,7 +164,8 @@ export const paykitInvoice$InboundSchema = (
       quantity: line.quantity!,
     })),
     subscription_id:
-      invoice.parent?.subscription_details?.subscription?.toString() ?? null,
+      invoice.parent?.subscription_details?.subscription?.toString() ??
+      null,
     status,
     paid_at: new Date(invoice.created * 1000).toISOString(),
     metadata: omitInternalMetadata(invoice.metadata ?? {}),
@@ -222,7 +230,9 @@ export const paykitPayment$InboundSchema = (
 /**
  * Refund
  */
-export const paykitRefund$InboundSchema = (refund: Stripe.Refund): Refund => {
+export const paykitRefund$InboundSchema = (
+  refund: Stripe.Refund,
+): Refund => {
   return {
     id: refund.id,
     amount: refund.amount,

@@ -33,7 +33,10 @@ const Root = ({ className, variant, ...props }: RootProps) => {
   );
 };
 
-const Title = ({ className, ...props }: React.ComponentProps<'div'>) => {
+const Title = ({
+  className,
+  ...props
+}: React.ComponentProps<'div'>) => {
   return (
     <div
       data-slot="alert-title"
@@ -46,7 +49,10 @@ const Title = ({ className, ...props }: React.ComponentProps<'div'>) => {
   );
 };
 
-const Description = ({ className, ...props }: React.ComponentProps<'div'>) => {
+const Description = ({
+  className,
+  ...props
+}: React.ComponentProps<'div'>) => {
   return (
     <div
       data-slot="alert-description"

@@ -44,7 +44,10 @@ import { Hono } from 'hono';
 const app = new Hono();
 
 app.post('/paykit/*', async c => {
-  const path = c.req.path.replace('/paykit', '') as keyof typeof endpoints;
+  const path = c.req.path.replace(
+    '/paykit',
+    '',
+  ) as keyof typeof endpoints;
 
   const handler = endpoints[path] as EndpointHandler<typeof path>;
 

@@ -44,19 +44,21 @@ type WithoutProviderRawEvents = {
 /**
  * @description Adjust these keys to match your provider's specific needs (e.g., Merchant ID, Secret Key).
  */
-export interface WithoutProviderSDKOptions extends PaykitProviderOptions {
+export interface WithoutProviderSDKOptions
+  extends PaykitProviderOptions {
   /**
    * The API key for the provider
    */
   apiKey: string;
 }
 
-const withoutProviderSDKOptionsSchema = schema<WithoutProviderSDKOptions>()(
-  z.object({
-    apiKey: z.string().min(1, 'API Key is required'),
-    isSandbox: z.boolean(),
-  }),
-);
+const withoutProviderSDKOptionsSchema =
+  schema<WithoutProviderSDKOptions>()(
+    z.object({
+      apiKey: z.string().min(1, 'API Key is required'),
+      isSandbox: z.boolean(),
+    }),
+  );
 
 const providerName = 'without-sdk';
 
@@ -67,7 +69,11 @@ const providerName = 'without-sdk';
 export class WithoutProviderSDK
   extends AbstractPayKitProvider
   implements
-    PayKitProvider<WithoutProviderMetadata, any, WithoutProviderRawEvents>
+    PayKitProvider<
+      WithoutProviderMetadata,
+      any,
+      WithoutProviderRawEvents
+    >
 {
   private _client: HTTPClient;
   readonly providerName = providerName;
@@ -83,7 +89,11 @@ export class WithoutProviderSDK
         Authorization: `Bearer ${opts.apiKey}`,
         'Content-Type': 'application/json',
       },
-      retryOptions: { max: 3, baseDelay: 1000, debug: opts.debug ?? true },
+      retryOptions: {
+        max: 3,
+        baseDelay: 1000,
+        debug: opts.debug ?? true,
+      },
     });
   }
 
@@ -93,12 +103,16 @@ export class WithoutProviderSDK
 
   private _ni(m: string): Promise<never> {
     return Promise.reject(
-      new NotImplementedError(m, this.providerName, { futureSupport: true }),
+      new NotImplementedError(m, this.providerName, {
+        futureSupport: true,
+      }),
     );
   }
   private _ns(m: string, r: string): Promise<never> {
     return Promise.reject(
-      new ProviderNotSupportedError(m, this.providerName, { reason: r }),
+      new ProviderNotSupportedError(m, this.providerName, {
+        reason: r,
+      }),
     );
   }
 
@@ -122,9 +136,12 @@ export class WithoutProviderSDK
         'createCheckout',
       );
 
-    const res = await this._client.post<Record<string, unknown>>('/checkouts', {
-      body: JSON.stringify(data),
-    });
+    const res = await this._client.post<Record<string, unknown>>(
+      '/checkouts',
+      {
+        body: JSON.stringify(data),
+      },
+    );
     if (!res.ok) throw new Error('Failed to create checkout');
     return res.value as unknown as Checkout;
   };
@@ -155,7 +172,8 @@ export class WithoutProviderSDK
       'This provider does not support updating checkouts once created.',
     );
 
-  deleteCheckout = (id: string): Promise<null> => this._ni('deleteCheckout');
+  deleteCheckout = (id: string): Promise<null> =>
+    this._ni('deleteCheckout');
 
   createCustomer = async (
     params: CreateCustomerParams<WithoutProviderMetadata['customer']>,
@@ -168,9 +186,12 @@ export class WithoutProviderSDK
         'createCustomer',
       );
 
-    const res = await this._client.post<Record<string, unknown>>('/customers', {
-      body: JSON.stringify(data),
-    });
+    const res = await this._client.post<Record<string, unknown>>(
+      '/customers',
+      {
+        body: JSON.stringify(data),
+      },
+    );
     if (!res.ok) throw new Error('Failed to create customer');
     return res.value as unknown as Customer;
   };
@@ -195,7 +216,10 @@ export class WithoutProviderSDK
     id: string,
     params: UpdateCustomerParams,
   ): Promise<Customer> => {
-    const { error, data } = updateCustomerSchema.safeParse({ id, ...params });
+    const { error, data } = updateCustomerSchema.safeParse({
+      id,
+      ...params,
+    });
     if (error)
       throw ValidationError.fromZodError(
         error,
@@ -213,26 +237,33 @@ export class WithoutProviderSDK
     return res.value as unknown as Customer;
   };
 
-  deleteCustomer = (id: string): Promise<null> => this._ni('deleteCustomer');
+  deleteCustomer = (id: string): Promise<null> =>
+    this._ni('deleteCustomer');
 
   createPayment = (params: CreatePaymentSchema): Promise<Payment> =>
     this._ni('createPayment');
   retrievePayment = (id: string): Promise<Payment | null> =>
     this._ni('retrievePayment');
-  updatePayment = (id: string, params: UpdatePaymentSchema): Promise<Payment> =>
-    this._ni('updatePayment');
-  deletePayment = (id: string): Promise<null> => this._ni('deletePayment');
+  updatePayment = (
+    id: string,
+    params: UpdatePaymentSchema,
+  ): Promise<Payment> => this._ni('updatePayment');
+  deletePayment = (id: string): Promise<null> =>
+    this._ni('deletePayment');
   capturePayment = (
     id: string,
     params: CapturePaymentSchema,
   ): Promise<Payment> => this._ni('capturePayment');
-  cancelPayment = (id: string): Promise<Payment> => this._ni('cancelPayment');
+  cancelPayment = (id: string): Promise<Payment> =>
+    this._ni('cancelPayment');
 
   createSubscription = (
     params: CreateSubscriptionSchema,
   ): Promise<Subscription> => this._ni('createSubscription');
 
-  retrieveSubscription = async (id: string): Promise<Subscription> => {
+  retrieveSubscription = async (
+    id: string,
+  ): Promise<Subscription> => {
     const { error } = retrieveSubscriptionSchema.safeParse({ id });
     if (error)
       throw ValidationError.fromZodError(
@@ -284,7 +315,9 @@ export class WithoutProviderSDK
   handleWebhook = async (
     payload: WebhookHandlerConfig,
     webhookSecret: string,
-  ): Promise<Array<WebhookEventPayload<WithoutProviderRawEvents>>> => {
+  ): Promise<
+    Array<WebhookEventPayload<WithoutProviderRawEvents>>
+  > => {
     const { headersAsObject } = payload;
 
     const headers = new Headers(headersAsObject);

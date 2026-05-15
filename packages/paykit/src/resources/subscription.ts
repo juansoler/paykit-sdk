@@ -30,7 +30,9 @@ export const subscriptionStatusSchema = z.enum([
   'pending',
 ]);
 
-export type SubscriptionStatus = z.infer<typeof subscriptionStatusSchema>;
+export type SubscriptionStatus = z.infer<
+  typeof subscriptionStatusSchema
+>;
 
 export interface Subscription {
   /**
@@ -131,12 +133,13 @@ export interface UpdateSubscriptionSchema<
   provider_metadata?: TProviderMetadata;
 }
 
-export const updateSubscriptionSchema = schema<UpdateSubscriptionSchema>()(
-  z.object({
-    metadata: metadataSchema,
-    provider_metadata: z.record(z.string(), z.unknown()).optional(),
-  }),
-);
+export const updateSubscriptionSchema =
+  schema<UpdateSubscriptionSchema>()(
+    z.object({
+      metadata: metadataSchema,
+      provider_metadata: z.record(z.string(), z.unknown()).optional(),
+    }),
+  );
 
 export interface RetrieveSubscriptionSchema {
   /**
@@ -145,11 +148,12 @@ export interface RetrieveSubscriptionSchema {
   id: string;
 }
 
-export const retrieveSubscriptionSchema = schema<RetrieveSubscriptionSchema>()(
-  z.object({
-    id: z.string(),
-  }),
-);
+export const retrieveSubscriptionSchema =
+  schema<RetrieveSubscriptionSchema>()(
+    z.object({
+      id: z.string(),
+    }),
+  );
 
 export interface DeleteSubscriptionSchema {
   /**
@@ -158,11 +162,12 @@ export interface DeleteSubscriptionSchema {
   id: string;
 }
 
-export const deleteSubscriptionSchema = schema<DeleteSubscriptionSchema>()(
-  z.object({
-    id: z.string(),
-  }),
-);
+export const deleteSubscriptionSchema =
+  schema<DeleteSubscriptionSchema>()(
+    z.object({
+      id: z.string(),
+    }),
+  );
 
 export interface CreateSubscriptionSchema<
   TProviderMetadata = Record<string, unknown>,
@@ -187,19 +192,22 @@ export interface CreateSubscriptionSchema<
   quantity: number;
 }
 
-export const createSubscriptionSchema = schema<CreateSubscriptionSchema>()(
-  subscriptionSchema
-    .omit({
-      id: true,
-      status: true,
-      custom_fields: true,
-      current_period_start: true,
-      current_period_end: true,
-      requires_action: true,
-      payment_url: true,
-    })
-    .extend({
-      provider_metadata: z.record(z.string(), z.unknown()).optional(),
-      quantity: z.number(),
-    }),
-);
+export const createSubscriptionSchema =
+  schema<CreateSubscriptionSchema>()(
+    subscriptionSchema
+      .omit({
+        id: true,
+        status: true,
+        custom_fields: true,
+        current_period_start: true,
+        current_period_end: true,
+        requires_action: true,
+        payment_url: true,
+      })
+      .extend({
+        provider_metadata: z
+          .record(z.string(), z.unknown())
+          .optional(),
+        quantity: z.number(),
+      }),
+  );

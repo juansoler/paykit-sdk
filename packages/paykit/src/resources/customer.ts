@@ -99,7 +99,9 @@ export const createCustomerSchema = schema<CreateCustomerParams>()(
 
 export interface UpdateCustomerParams<
   TProviderMetadata = Record<string, unknown>,
-> extends Partial<Pick<Customer, 'email' | 'name' | 'phone' | 'metadata'>> {
+> extends Partial<
+    Pick<Customer, 'email' | 'name' | 'phone' | 'metadata'>
+  > {
   provider_metadata?: TProviderMetadata;
   billing?: BillingInfo | null;
 }
@@ -120,15 +122,20 @@ export interface RetrieveCustomerParams {
   id: string;
 }
 
-export const retrieveCustomerSchema = schema<RetrieveCustomerParams>()(
-  z.object({
-    id: z.string(),
-  }),
-);
+export const retrieveCustomerSchema =
+  schema<RetrieveCustomerParams>()(
+    z.object({
+      id: z.string(),
+    }),
+  );
 
-export const isEmailCustomer = (customer: unknown): customer is EmailPayee => {
+export const isEmailCustomer = (
+  customer: unknown,
+): customer is EmailPayee => {
   return (
-    typeof customer === 'object' && customer !== null && 'email' in customer
+    typeof customer === 'object' &&
+    customer !== null &&
+    'email' in customer
   );
 };
 
@@ -138,7 +145,10 @@ export const isIdCustomer = (
   return typeof customer === 'string' && customer.length > 0;
 };
 
-export const parseCustomerName = (params: { name?: string; email: string }) => {
+export const parseCustomerName = (params: {
+  name?: string;
+  email: string;
+}) => {
   const full = params.name?.trim() || params.email.split('@')[0];
 
   const parts = full.split(/\s+/);

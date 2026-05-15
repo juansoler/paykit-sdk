@@ -9,13 +9,16 @@ const REGISTRY_DIR = join(process.cwd(), '../../packages/registry');
 
 const CACHE_HEADERS = {
   'Content-Type': 'application/json',
-  'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+  'Cache-Control':
+    'public, s-maxage=3600, stale-while-revalidate=86400',
 } as const;
 
 /**
  * Enriches a registry item's files with their content
  */
-async function enrichItemWithFileContents<T extends { files: Array<{ path: string }> }>(
+async function enrichItemWithFileContents<
+  T extends { files: Array<{ path: string }> },
+>(
   item: T,
 ): Promise<T & { files: Array<{ path: string; content: string }> }> {
   const filesWithContent = await Promise.all(
@@ -83,12 +86,15 @@ export async function GET(
 
     const ext = fullPath.split('.').pop();
     const contentType =
-      ext === 'tsx' || ext === 'ts' ? 'text/plain; charset=utf-8' : 'text/plain';
+      ext === 'tsx' || ext === 'ts'
+        ? 'text/plain; charset=utf-8'
+        : 'text/plain';
 
     return new NextResponse(content, {
       headers: {
         'Content-Type': contentType,
-        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+        'Cache-Control':
+          'public, s-maxage=3600, stale-while-revalidate=86400',
       },
     });
   } catch (error) {
@@ -96,7 +102,8 @@ export async function GET(
       {
         error: 'File Not Found',
         message: `Could not read file: ${fullPath}`,
-        details: error instanceof Error ? error.message : 'Unknown error',
+        details:
+          error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 404 },
     );
@@ -104,15 +111,21 @@ export async function GET(
 }
 
 export async function OPTIONS() {
-  const items = registryIndex.items.map(({ name, description, type, meta }) => ({
-    name,
-    description,
-    type,
-    meta,
-  }));
+  const items = registryIndex.items.map(
+    ({ name, description, type, meta }) => ({
+      name,
+      description,
+      type,
+      meta,
+    }),
+  );
 
   return NextResponse.json(
-    { registry: registryIndex.name, homepage: registryIndex.homepage, items },
+    {
+      registry: registryIndex.name,
+      homepage: registryIndex.homepage,
+      items,
+    },
     {
       headers: {
         'Content-Type': 'application/json',

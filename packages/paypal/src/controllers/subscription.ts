@@ -9,7 +9,9 @@ import {
 } from '../schema';
 
 export class SubscriptionsController extends BaseController {
-  private catchAllErrors(req: ReturnType<BaseController['createRequest']>) {
+  private catchAllErrors(
+    req: ReturnType<BaseController['createRequest']>,
+  ) {
     req.throwOn(
       400,
       CustomError,
@@ -35,10 +37,18 @@ export class SubscriptionsController extends BaseController {
   }: {
     body: CreateSubscriptionSchema;
   }): Promise<ApiResponse<any>> {
-    const req = this.createRequest('POST', '/v1/billing/subscriptions');
-    const mapped = req.prepareArgs({ body: [body, createSubscriptionApticSchema] });
+    const req = this.createRequest(
+      'POST',
+      '/v1/billing/subscriptions',
+    );
+    const mapped = req.prepareArgs({
+      body: [body, createSubscriptionApticSchema],
+    });
     req.header('Content-Type', 'application/json');
-    req.header('PayPal-Request-Id', Math.random().toString(36).substring(2, 15));
+    req.header(
+      'PayPal-Request-Id',
+      Math.random().toString(36).substring(2, 15),
+    );
 
     req.json(mapped.body);
     this.catchAllErrors(req);
@@ -64,16 +74,29 @@ export class SubscriptionsController extends BaseController {
       body: [body, resumeSubscriptionApticSchemaRequest],
     });
     req.header('Content-Type', 'application/json');
-    req.header('PayPal-Request-Id', Math.random().toString(36).substring(2, 15));
+    req.header(
+      'PayPal-Request-Id',
+      Math.random().toString(36).substring(2, 15),
+    );
 
     req.json(mapped.body);
     this.catchAllErrors(req);
     req.authenticate([{ oauth2: true }]);
   }
 
-  async retrieveSubscription({ subscriptionId }: { subscriptionId: string }) {
-    const req = this.createRequest('GET', `v1/billing/subscriptions/${subscriptionId}`);
-    req.header('PayPal-Request-Id', Math.random().toString(36).substring(2, 15));
+  async retrieveSubscription({
+    subscriptionId,
+  }: {
+    subscriptionId: string;
+  }) {
+    const req = this.createRequest(
+      'GET',
+      `v1/billing/subscriptions/${subscriptionId}`,
+    );
+    req.header(
+      'PayPal-Request-Id',
+      Math.random().toString(36).substring(2, 15),
+    );
     this.catchAllErrors(req);
     req.authenticate([{ oauth2: true }]);
     return req.callAsJson(subscriptionApticSchema);
@@ -93,7 +116,10 @@ export class SubscriptionsController extends BaseController {
     const mapped = req.prepareArgs({
       body: [reason, cancelSubscriptionApticSchemaRequest],
     });
-    req.header('PayPal-Request-Id', Math.random().toString(36).substring(2, 15));
+    req.header(
+      'PayPal-Request-Id',
+      Math.random().toString(36).substring(2, 15),
+    );
     req.json(mapped.body);
     this.catchAllErrors(req);
     req.authenticate([{ oauth2: true }]);
@@ -107,10 +133,20 @@ export class SubscriptionsController extends BaseController {
     subscriptionId: string;
     metadata: Record<string, unknown>;
   }) {
-    const req = this.createRequest('PATCH', `v1/billing/subscriptions/${subscriptionId}`);
-    req.header('PayPal-Request-Id', Math.random().toString(36).substring(2, 15));
+    const req = this.createRequest(
+      'PATCH',
+      `v1/billing/subscriptions/${subscriptionId}`,
+    );
+    req.header(
+      'PayPal-Request-Id',
+      Math.random().toString(36).substring(2, 15),
+    );
 
-    req.json({ op: 'replace', path: '/custom_id', value: JSON.stringify(metadata) });
+    req.json({
+      op: 'replace',
+      path: '/custom_id',
+      value: JSON.stringify(metadata),
+    });
 
     this.catchAllErrors(req);
     req.authenticate([{ oauth2: true }]);

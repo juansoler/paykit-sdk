@@ -22,7 +22,9 @@ const SdkPage = () => {
         <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
           <Link href="/" className="flex items-center space-x-3">
             <PaykitIcon className="text-foreground size-4" />
-            <span className="text-xl font-bold tracking-tight">PayKit</span>
+            <span className="text-xl font-bold tracking-tight">
+              PayKit
+            </span>
           </Link>
 
           <SiteHeader showDocs />
@@ -35,7 +37,9 @@ const SdkPage = () => {
           <div className="mb-6 space-y-4">
             <div className="bg-muted/50 inline-flex items-center space-x-2 rounded-full border px-4 py-2 text-sm">
               <Code2 className="h-4 w-4 text-blue-500" />
-              <span className="text-muted-foreground">PayKit SDK</span>
+              <span className="text-muted-foreground">
+                PayKit SDK
+              </span>
               <Badge variant="secondary" className="ml-2">
                 Open Source
               </Badge>
@@ -50,8 +54,8 @@ const SdkPage = () => {
             </h1>
 
             <p className="text-muted-foreground mx-auto max-w-2xl text-xl leading-relaxed">
-              A consistent TypeScript API across Stripe, PayPal, Polar, and more.
-              Swap providers with 2 lines of code.
+              A consistent TypeScript API across Stripe, PayPal,
+              Polar, and more. Swap providers with 2 lines of code.
             </p>
           </div>
 
@@ -62,7 +66,8 @@ const SdkPage = () => {
               variant="outline"
               size="lg"
             >
-              npx shadcn@latest add https://usepaykit.dev/r/stripe-nextjs-hooks
+              npx shadcn@latest add
+              https://usepaykit.dev/r/stripe-nextjs-hooks
             </CopyButton>
           </div>
         </div>

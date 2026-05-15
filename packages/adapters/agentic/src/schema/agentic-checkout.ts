@@ -1,8 +1,14 @@
-import { createCheckoutSchema, billingSchema } from '@paykit-sdk/core';
+import {
+  createCheckoutSchema,
+  billingSchema,
+} from '@paykit-sdk/core';
 import { z } from 'zod';
 import { agenticBuyerSchema } from './agentic-buyer';
 import { agenticFufillmentOptionSchema } from './agentic-fufillment';
-import { agenticLinkSchema, agenticMessageSchema } from './agentic-message';
+import {
+  agenticLinkSchema,
+  agenticMessageSchema,
+} from './agentic-message';
 
 export const agenticTotalsSchema = z.object({
   /**
@@ -92,7 +98,9 @@ export const agenticCheckoutSessionSchema = z.object({
   /**
    * The line items of the checkout.
    */
-  line_items: z.array(z.object({ id: z.string(), quantity: z.number() })),
+  line_items: z.array(
+    z.object({ id: z.string(), quantity: z.number() }),
+  ),
 
   /**
    * The fulfillment address of the checkout.
@@ -133,7 +141,9 @@ export const agenticCheckoutSessionSchema = z.object({
   order: agenticOrderSchema.optional().nullable(),
 });
 
-export type AgenticCheckoutSession = z.infer<typeof agenticCheckoutSessionSchema>;
+export type AgenticCheckoutSession = z.infer<
+  typeof agenticCheckoutSessionSchema
+>;
 
 export const createAgenticCheckoutSessionParamsSchema = z.object({
   /**

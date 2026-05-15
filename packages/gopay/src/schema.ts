@@ -93,7 +93,8 @@ export interface GoPayPaymentBaseResponse {
   gw_url?: string;
 }
 
-export interface GoPaySubscriptionResponse extends GoPayPaymentBaseResponse {
+export interface GoPaySubscriptionResponse
+  extends GoPayPaymentBaseResponse {
   /**
    * The payment instrument of the payment
    */

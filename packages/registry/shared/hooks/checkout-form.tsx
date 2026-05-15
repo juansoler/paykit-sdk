@@ -5,7 +5,9 @@ import { useCheckout } from '@paykit-sdk/react';
 
 export const CheckoutForm = () => {
   const { create } = useCheckout();
-  const [checkoutUrl, setCheckoutUrl] = React.useState<string | null>(null);
+  const [checkoutUrl, setCheckoutUrl] = React.useState<string | null>(
+    null,
+  );
 
   const handleCreateCheckout = async () => {
     const [data, error] = await create.run({
@@ -41,7 +43,11 @@ export const CheckoutForm = () => {
       {checkoutUrl && (
         <div>
           <p>Checkout created!</p>
-          <a href={checkoutUrl} target="_blank" rel="noopener noreferrer">
+          <a
+            href={checkoutUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             Go to checkout →
           </a>
         </div>

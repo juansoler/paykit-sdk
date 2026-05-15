@@ -11,7 +11,9 @@ import z from 'zod';
 
 export const monnifyToPaykitEventMap: Record<
   string,
-  string | null | ((eventData: Record<string, unknown>) => WebhookEventType)
+  | string
+  | null
+  | ((eventData: Record<string, unknown>) => WebhookEventType)
 > = {
   CUSTOMER_CREATED: null,
   CUSTOMER_UPDATED: null,
@@ -52,8 +54,13 @@ export const monnifyToPaykitEventMap: Record<
   SUCCESSFUL_TRANSACTION_OFFLINE: 'payment.created',
 };
 
-export const paykitCheckout$InboundSchema = (data: Record<string, any>): Checkout => {
-  const metadataObj = (data.metaData || {}) as Record<string, unknown>;
+export const paykitCheckout$InboundSchema = (
+  data: Record<string, any>,
+): Checkout => {
+  const metadataObj = (data.metaData || {}) as Record<
+    string,
+    unknown
+  >;
   const paykitMetadata = metadataObj[PAYKIT_METADATA_KEY];
 
   let item = '';
@@ -80,7 +87,9 @@ export const paykitCheckout$InboundSchema = (data: Record<string, any>): Checkou
     id: data.transactionReference || data.paymentReference || '',
     amount: data.amountPaid || data.amount || 0,
     currency: data.currencyCode || data.currency || 'NGN',
-    customer: { email: data?.customerEmail || data?.customer?.email || '' },
+    customer: {
+      email: data?.customerEmail || data?.customer?.email || '',
+    },
     payment_url: data.checkoutUrl || null,
     metadata,
     session_type: 'one_time',
@@ -88,8 +97,13 @@ export const paykitCheckout$InboundSchema = (data: Record<string, any>): Checkou
   };
 };
 
-export const paykitPayment$InboundSchema = (data: Record<string, any>): Payment => {
-  const metadataObj = (data.metaData || {}) as Record<string, unknown>;
+export const paykitPayment$InboundSchema = (
+  data: Record<string, any>,
+): Payment => {
+  const metadataObj = (data.metaData || {}) as Record<
+    string,
+    unknown
+  >;
   const paykitMetadata = metadataObj[PAYKIT_METADATA_KEY];
 
   let item: string | null = null;
@@ -121,15 +135,19 @@ export const paykitPayment$InboundSchema = (data: Record<string, any>): Payment 
     EXPIRED: 'failed',
   };
 
-  const paymentStatus = data.paymentStatus || data.status || 'PENDING';
+  const paymentStatus =
+    data.paymentStatus || data.status || 'PENDING';
   const status = statusMap[paymentStatus] || 'pending';
-  const requiresAction = status === 'pending' || status === 'processing';
+  const requiresAction =
+    status === 'pending' || status === 'processing';
 
   return {
     id: data.transactionReference || data.paymentReference || '',
     amount: data.amountPaid || data.amount || 0,
     currency: data.currencyCode || data.currency || 'NGN',
-    customer: { email: data?.customerEmail || data?.customer?.email || '' },
+    customer: {
+      email: data?.customerEmail || data?.customer?.email || '',
+    },
     status,
     item_id: item,
     metadata,
@@ -138,11 +156,16 @@ export const paykitPayment$InboundSchema = (data: Record<string, any>): Payment 
   };
 };
 
-export const paykitRefund$InboundSchema = (data: Record<string, any>): Refund => {
+export const paykitRefund$InboundSchema = (
+  data: Record<string, any>,
+): Refund => {
   const metadata = omitInternalMetadata(data.metaData ?? {});
 
   return {
-    id: data.transactionReference || data.refundReference || crypto.randomUUID(),
+    id:
+      data.transactionReference ||
+      data.refundReference ||
+      crypto.randomUUID(),
     amount: data.amountRefunded || data.amount || 0,
     currency: data.currencyCode || data.currency || 'NGN',
     reason: data.refundReason || data.reason || null,

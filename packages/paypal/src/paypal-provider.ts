@@ -100,9 +100,16 @@ export class PayPalProvider
   constructor(config: PayPalOptions) {
     super(paypalOptionsSchema, config, providerName);
 
-    const { clientId, clientSecret, isSandbox = true, debug } = config;
+    const {
+      clientId,
+      clientSecret,
+      isSandbox = true,
+      debug,
+    } = config;
 
-    const environment = isSandbox ? Environment.Sandbox : Environment.Production;
+    const environment = isSandbox
+      ? Environment.Sandbox
+      : Environment.Production;
 
     this.client = new Client({
       clientCredentialsAuthCredentials: {
@@ -120,7 +127,9 @@ export class PayPalProvider
 
     this.ordersController = new OrdersController(this.client);
     this.paymentsController = new PaymentsController(this.client);
-    this.subscriptionsController = new SubscriptionsController(this.client);
+    this.subscriptionsController = new SubscriptionsController(
+      this.client,
+    );
     this.webhookController = new WebhookController(this.client);
   }
 
@@ -128,20 +137,29 @@ export class PayPalProvider
    * Checkout management
    * In PayPal, Order IS the checkout
    */
-  createCheckout = async (params: CreateCheckoutSchema): Promise<Checkout> => {
+  createCheckout = async (
+    params: CreateCheckoutSchema,
+  ): Promise<Checkout> => {
     const { error, data } = createCheckoutSchema.safeParse(params);
 
     if (error)
-      throw ValidationError.fromZodError(error, this.providerName, 'createCheckout');
+      throw ValidationError.fromZodError(
+        error,
+        this.providerName,
+        'createCheckout',
+      );
 
     const stringifiedMetadata = JSON.stringify(data.metadata);
 
     if (stringifiedMetadata.length > PAYPAL_METADATA_MAX_LENGTH) {
-      throw new ConstraintViolationError('Metadata exceeds maximum length', {
-        value: stringifiedMetadata.length,
-        limit: PAYPAL_METADATA_MAX_LENGTH,
-        provider: this.providerName,
-      });
+      throw new ConstraintViolationError(
+        'Metadata exceeds maximum length',
+        {
+          value: stringifiedMetadata.length,
+          limit: PAYPAL_METADATA_MAX_LENGTH,
+          provider: this.providerName,
+        },
+      );
     }
 
     const {
@@ -159,19 +177,27 @@ export class PayPalProvider
     const quantity = data.quantity || 1;
     const unitAmount = (totalAmount / quantity).toFixed(2);
 
-    const orderOptionsBody: Parameters<OrdersController['createOrder']>[0]['body'] = {
+    const orderOptionsBody: Parameters<
+      OrdersController['createOrder']
+    >[0]['body'] = {
       intent: CheckoutPaymentIntent.Capture,
       payer: {
-        ...(typeof data.customer === 'string' && { payerId: data.customer }),
+        ...(typeof data.customer === 'string' && {
+          payerId: data.customer,
+        }),
         ...(typeof data.customer === 'object' &&
-          'email' in data.customer && { emailAddress: data.customer.email }),
+          'email' in data.customer && {
+            emailAddress: data.customer.email,
+          }),
       },
       purchaseUnits: [
         {
           amount: {
             currencyCode: currency,
             value: amount,
-            breakdown: { itemTotal: { currencyCode: currency, value: amount } },
+            breakdown: {
+              itemTotal: { currencyCode: currency, value: amount },
+            },
           },
           customId: stringifiedMetadata,
           items: [
@@ -179,7 +205,10 @@ export class PayPalProvider
               sku: data.item_id,
               quantity: quantity.toString(),
               name: itemName,
-              unitAmount: { currencyCode: currency, value: unitAmount },
+              unitAmount: {
+                currencyCode: currency,
+                value: unitAmount,
+              },
             },
           ],
         },
@@ -213,13 +242,22 @@ export class PayPalProvider
     }
 
     try {
-      const order = await this.ordersController.createOrder({ body: orderOptionsBody });
+      const order = await this.ordersController.createOrder({
+        body: orderOptionsBody,
+      });
 
       return paykitCheckout$InboundSchema(order.result);
     } catch (error) {
-      throw new OperationFailedError('createCheckout', this.providerName, {
-        cause: error instanceof Error ? error : new Error('Unknown error'),
-      });
+      throw new OperationFailedError(
+        'createCheckout',
+        this.providerName,
+        {
+          cause:
+            error instanceof Error
+              ? error
+              : new Error('Unknown error'),
+        },
+      );
     }
   };
 
@@ -231,9 +269,16 @@ export class PayPalProvider
 
       return paykitCheckout$InboundSchema(order.result);
     } catch (error) {
-      throw new OperationFailedError('retrieveCheckout', this.providerName, {
-        cause: error instanceof Error ? error : new Error('Unknown error'),
-      });
+      throw new OperationFailedError(
+        'retrieveCheckout',
+        this.providerName,
+        {
+          cause:
+            error instanceof Error
+              ? error
+              : new Error('Unknown error'),
+        },
+      );
     }
   };
 
@@ -241,60 +286,91 @@ export class PayPalProvider
     id: string,
     params: UpdateCheckoutSchema,
   ): Promise<Checkout> => {
-    throw new ProviderNotSupportedError('updateCheckout', this.providerName, {
-      reason:
-        'PayPal does not support updating orders. Cancel and create a new order instead.',
-    });
+    throw new ProviderNotSupportedError(
+      'updateCheckout',
+      this.providerName,
+      {
+        reason:
+          'PayPal does not support updating orders. Cancel and create a new order instead.',
+      },
+    );
   };
 
   deleteCheckout = async (id: string): Promise<null> => {
-    throw new ProviderNotSupportedError('deleteCheckout', this.providerName, {
-      reason: 'PayPal orders cannot be deleted. They expire automatically.',
-    });
+    throw new ProviderNotSupportedError(
+      'deleteCheckout',
+      this.providerName,
+      {
+        reason:
+          'PayPal orders cannot be deleted. They expire automatically.',
+      },
+    );
   };
 
-  createCustomer = async (params: CreateCustomerParams): Promise<Customer> => {
-    throw new ProviderNotSupportedError('createCustomer', this.providerName, {
-      reason: 'PayPal does not support creating customers',
-      alternative: 'Use Payer information within orders or implement PayPal Vault API',
-    });
+  createCustomer = async (
+    params: CreateCustomerParams,
+  ): Promise<Customer> => {
+    throw new ProviderNotSupportedError(
+      'createCustomer',
+      this.providerName,
+      {
+        reason: 'PayPal does not support creating customers',
+        alternative:
+          'Use Payer information within orders or implement PayPal Vault API',
+      },
+    );
   };
 
   updateCustomer = async (
     id: string,
     params: UpdateCustomerParams,
   ): Promise<Customer> => {
-    throw new ProviderNotSupportedError('updateCustomer', this.providerName, {
-      reason: 'PayPal does not support standalone customer management',
-    });
+    throw new ProviderNotSupportedError(
+      'updateCustomer',
+      this.providerName,
+      {
+        reason:
+          'PayPal does not support standalone customer management',
+      },
+    );
   };
 
   deleteCustomer = async (id: string): Promise<null> => {
-    throw new ProviderNotSupportedError('deleteCustomer', this.providerName, {
-      reason: 'PayPal does not support deleting customers',
-    });
+    throw new ProviderNotSupportedError(
+      'deleteCustomer',
+      this.providerName,
+      {
+        reason: 'PayPal does not support deleting customers',
+      },
+    );
   };
 
   retrieveCustomer = async (id: string): Promise<Customer | null> => {
-    throw new ProviderNotSupportedError('retrieveCustomer', this.providerName, {
-      reason: 'PayPal does not support retrieving customers',
-    });
+    throw new ProviderNotSupportedError(
+      'retrieveCustomer',
+      this.providerName,
+      {
+        reason: 'PayPal does not support retrieving customers',
+      },
+    );
   };
 
   createSubscription = async (
     params: CreateSubscriptionSchema,
   ): Promise<Subscription> => {
-    const subscription = await this.subscriptionsController.createSubscription({
-      body: params,
-    });
+    const subscription =
+      await this.subscriptionsController.createSubscription({
+        body: params,
+      });
     return subscription as unknown as Subscription;
   };
 
   cancelSubscription = async (id: string): Promise<Subscription> => {
-    const subscription = await this.subscriptionsController.cancelSubscription({
-      subscriptionId: id,
-      reason: 'Customer requested cancellation',
-    });
+    const subscription =
+      await this.subscriptionsController.cancelSubscription({
+        subscriptionId: id,
+        reason: 'Customer requested cancellation',
+      });
 
     return subscription as unknown as Subscription;
   };
@@ -306,24 +382,31 @@ export class PayPalProvider
     const stringifiedMetadata = JSON.stringify(params.metadata);
 
     if (stringifiedMetadata.length > PAYPAL_METADATA_MAX_LENGTH) {
-      throw new ConstraintViolationError('Metadata exceeds maximum length', {
-        value: stringifiedMetadata.length,
-        limit: PAYPAL_METADATA_MAX_LENGTH,
-        provider: this.providerName,
-      });
+      throw new ConstraintViolationError(
+        'Metadata exceeds maximum length',
+        {
+          value: stringifiedMetadata.length,
+          limit: PAYPAL_METADATA_MAX_LENGTH,
+          provider: this.providerName,
+        },
+      );
     }
-    const subscription = await this.subscriptionsController.updateSubscription({
-      subscriptionId: id,
-      metadata: params.metadata ?? {},
-    });
+    const subscription =
+      await this.subscriptionsController.updateSubscription({
+        subscriptionId: id,
+        metadata: params.metadata ?? {},
+      });
 
     return subscription as unknown as Subscription;
   };
 
-  retrieveSubscription = async (id: string): Promise<Subscription> => {
-    const subscription = await this.subscriptionsController.retrieveSubscription({
-      subscriptionId: id,
-    });
+  retrieveSubscription = async (
+    id: string,
+  ): Promise<Subscription> => {
+    const subscription =
+      await this.subscriptionsController.retrieveSubscription({
+        subscriptionId: id,
+      });
 
     return subscription as unknown as Subscription;
   };
@@ -338,27 +421,41 @@ export class PayPalProvider
    * Payment management
    * In PayPal, Order IS the payment
    */
-  createPayment = async (params: CreatePaymentSchema): Promise<Payment> => {
+  createPayment = async (
+    params: CreatePaymentSchema,
+  ): Promise<Payment> => {
     const stringifiedMetadata = JSON.stringify(params.metadata);
 
     if (stringifiedMetadata.length > PAYPAL_METADATA_MAX_LENGTH) {
-      throw new ConstraintViolationError('Metadata exceeds maximum length', {
-        value: stringifiedMetadata.length,
-        limit: PAYPAL_METADATA_MAX_LENGTH,
-        provider: this.providerName,
-      });
+      throw new ConstraintViolationError(
+        'Metadata exceeds maximum length',
+        {
+          value: stringifiedMetadata.length,
+          limit: PAYPAL_METADATA_MAX_LENGTH,
+          provider: this.providerName,
+        },
+      );
     }
 
-    const orderOptionsBody: Parameters<OrdersController['createOrder']>[0]['body'] = {
+    const orderOptionsBody: Parameters<
+      OrdersController['createOrder']
+    >[0]['body'] = {
       intent: CheckoutPaymentIntent.Capture,
       payer: {
-        ...(typeof params.customer === 'string' && { payerId: params.customer }),
+        ...(typeof params.customer === 'string' && {
+          payerId: params.customer,
+        }),
         ...(typeof params.customer === 'object' &&
-          'email' in params.customer && { emailAddress: params.customer.email }),
+          'email' in params.customer && {
+            emailAddress: params.customer.email,
+          }),
       },
       purchaseUnits: [
         {
-          amount: { currencyCode: params.currency, value: params.amount.toString() },
+          amount: {
+            currencyCode: params.currency,
+            value: params.amount.toString(),
+          },
           customId: stringifiedMetadata,
         },
       ],
@@ -385,20 +482,36 @@ export class PayPalProvider
     }
 
     try {
-      const order = await this.ordersController.createOrder({ body: orderOptionsBody });
+      const order = await this.ordersController.createOrder({
+        body: orderOptionsBody,
+      });
 
       return paykitPayment$InboundSchema(order.result);
     } catch (error) {
-      throw new OperationFailedError('createPayment', this.providerName, {
-        cause: error instanceof Error ? error : new Error('Unknown error'),
-      });
+      throw new OperationFailedError(
+        'createPayment',
+        this.providerName,
+        {
+          cause:
+            error instanceof Error
+              ? error
+              : new Error('Unknown error'),
+        },
+      );
     }
   };
 
-  updatePayment = async (id: string, params: UpdatePaymentSchema): Promise<Payment> => {
-    throw new ProviderNotSupportedError('updatePayment', this.providerName, {
-      reason: 'PayPal does not support updating orders.',
-    });
+  updatePayment = async (
+    id: string,
+    params: UpdatePaymentSchema,
+  ): Promise<Payment> => {
+    throw new ProviderNotSupportedError(
+      'updatePayment',
+      this.providerName,
+      {
+        reason: 'PayPal does not support updating orders.',
+      },
+    );
   };
 
   retrievePayment = async (id: string): Promise<Payment | null> => {
@@ -409,73 +522,121 @@ export class PayPalProvider
 
       return paykitPayment$InboundSchema(order.result);
     } catch (error) {
-      throw new OperationFailedError('retrievePayment', this.providerName, {
-        cause: error instanceof Error ? error : new Error('Unknown error'),
-      });
+      throw new OperationFailedError(
+        'retrievePayment',
+        this.providerName,
+        {
+          cause:
+            error instanceof Error
+              ? error
+              : new Error('Unknown error'),
+        },
+      );
     }
   };
 
   deletePayment = async (id: string): Promise<null> => {
-    throw new ProviderNotSupportedError('deletePayment', this.providerName, {
-      reason: 'PayPal orders cannot be deleted. They expire automatically.',
-    });
+    throw new ProviderNotSupportedError(
+      'deletePayment',
+      this.providerName,
+      {
+        reason:
+          'PayPal orders cannot be deleted. They expire automatically.',
+      },
+    );
   };
 
   capturePayment = async (id: string): Promise<Payment> => {
     try {
-      const captured = await this.ordersController.captureOrder({ id });
+      const captured = await this.ordersController.captureOrder({
+        id,
+      });
 
-      if (!captured.result) throw new ResourceNotFoundError('Order', id);
+      if (!captured.result)
+        throw new ResourceNotFoundError('Order', id);
 
       return paykitPayment$InboundSchema(captured.result);
     } catch (error) {
-      throw new OperationFailedError('capturePayment', this.providerName, {
-        cause: error instanceof Error ? error : new Error('Unknown error'),
-      });
+      throw new OperationFailedError(
+        'capturePayment',
+        this.providerName,
+        {
+          cause:
+            error instanceof Error
+              ? error
+              : new Error('Unknown error'),
+        },
+      );
     }
   };
 
   cancelPayment = async (id: string): Promise<Payment> => {
     // PayPal doesn't have explicit cancel, but you can void authorizations
-    throw new ProviderNotSupportedError('cancelPayment', this.providerName, {
-      reason:
-        'PayPal order cancellation not directly supported. Orders expire automatically.',
-    });
+    throw new ProviderNotSupportedError(
+      'cancelPayment',
+      this.providerName,
+      {
+        reason:
+          'PayPal order cancellation not directly supported. Orders expire automatically.',
+      },
+    );
   };
 
   /**
    * Refund management
    */
-  createRefund = async (params: CreateRefundSchema): Promise<Refund> => {
+  createRefund = async (
+    params: CreateRefundSchema,
+  ): Promise<Refund> => {
     try {
-      const order = await this.ordersController.getOrder({ id: params.payment_id });
+      const order = await this.ordersController.getOrder({
+        id: params.payment_id,
+      });
 
-      if (!order.result) throw new ResourceNotFoundError('Order', params.payment_id);
+      if (!order.result)
+        throw new ResourceNotFoundError('Order', params.payment_id);
 
       const captureIds =
-        order.result.purchaseUnits?.[0]?.payments?.captures?.map(c => c.id!) || [];
+        order.result.purchaseUnits?.[0]?.payments?.captures?.map(
+          c => c.id!,
+        ) || [];
 
       if (captureIds.length === 0) {
-        throw new ResourceNotFoundError('Capture', params.payment_id, this.providerName);
+        throw new ResourceNotFoundError(
+          'Capture',
+          params.payment_id,
+          this.providerName,
+        );
       }
 
-      const currencyCode = order.result.purchaseUnits?.[0]?.amount?.currencyCode || 'USD';
+      const currencyCode =
+        order.result.purchaseUnits?.[0]?.amount?.currencyCode ||
+        'USD';
       const amount = params.amount
         ? params.amount.toString()
         : order.result.purchaseUnits?.[0]?.amount?.value || '0';
 
-      const refund = await this.paymentsController.refundCapturedPayment({
-        captureId: captureIds[0],
-        body: { amount: { currencyCode, value: amount } },
-      });
+      const refund =
+        await this.paymentsController.refundCapturedPayment({
+          captureId: captureIds[0],
+          body: { amount: { currencyCode, value: amount } },
+        });
 
-      if (!refund.result) throw new ResourceNotFoundError('Refund', params.payment_id);
+      if (!refund.result)
+        throw new ResourceNotFoundError('Refund', params.payment_id);
 
       return paykitRefund$InboundSchema(refund.result);
     } catch (error) {
-      throw new OperationFailedError('createRefund', this.providerName, {
-        cause: error instanceof Error ? error : new Error('Unknown error'),
-      });
+      throw new OperationFailedError(
+        'createRefund',
+        this.providerName,
+        {
+          cause:
+            error instanceof Error
+              ? error
+              : new Error('Unknown error'),
+        },
+      );
     }
   };
 
@@ -488,9 +649,15 @@ export class PayPalProvider
     const { result } = await this.webhookController.verifyWebhook({
       authAlgo: headersAsObject['paypal-auth-algo'] as string,
       certUrl: headersAsObject['paypal-cert-url'] as string,
-      transmissionId: headersAsObject['paypal-transmission-id'] as string,
-      transmissionSig: headersAsObject['paypal-transmission-sig'] as string,
-      transmissionTime: headersAsObject['paypal-transmission-time'] as string,
+      transmissionId: headersAsObject[
+        'paypal-transmission-id'
+      ] as string,
+      transmissionSig: headersAsObject[
+        'paypal-transmission-sig'
+      ] as string,
+      transmissionTime: headersAsObject[
+        'paypal-transmission-time'
+      ] as string,
       webhookId: webhookSecret,
       webhookEvent: JSON.parse(body),
     });
@@ -509,7 +676,9 @@ export class PayPalProvider
     results.push({
       id: event.id,
       type: `paypal.${eventType}` as any,
-      created: Math.floor(new Date(event.create_time).getTime() / 1000),
+      created: Math.floor(
+        new Date(event.create_time).getTime() / 1000,
+      ),
       data: event as any,
       is_raw: true,
     });
@@ -518,7 +687,9 @@ export class PayPalProvider
       WebhookEventPayload<PayPalRawEvents>
     > | null> => {
       const resource = event.resource as Record<string, unknown>;
-      const timestamp = Math.floor(new Date(event.create_time).getTime() / 1000);
+      const timestamp = Math.floor(
+        new Date(event.create_time).getTime() / 1000,
+      );
 
       switch (eventType) {
         case 'CHECKOUT.ORDER.APPROVED':
@@ -541,7 +712,9 @@ export class PayPalProvider
               data:
                 eventType === 'CHECKOUT.ORDER.COMPLETED'
                   ? paykitPaymentWebhook$InboundSchema(resource)
-                  : paykitPaymentCaptureWebhook$InboundSchema(resource),
+                  : paykitPaymentCaptureWebhook$InboundSchema(
+                      resource,
+                    ),
             }),
           ];
 

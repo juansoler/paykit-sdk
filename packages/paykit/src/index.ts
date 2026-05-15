@@ -30,8 +30,10 @@ class PayKit<P extends PayKitProvider<any, any, any>> {
       create: (params: Parameters<P['createCustomer']>[0]) =>
         this.provider.createCustomer(params),
 
-      update: (id: string, params: Parameters<P['updateCustomer']>[1]) =>
-        this.provider.updateCustomer(id, params),
+      update: (
+        id: string,
+        params: Parameters<P['updateCustomer']>[1],
+      ) => this.provider.updateCustomer(id, params),
 
       retrieve: (id: string) => this.provider.retrieveCustomer(id),
       delete: (id: string) => this.provider.deleteCustomer(id),
@@ -45,8 +47,10 @@ class PayKit<P extends PayKitProvider<any, any, any>> {
 
       retrieve: (id: string) => this.provider.retrieveCheckout(id),
 
-      update: (id: string, params: Parameters<P['updateCheckout']>[1]) =>
-        this.provider.updateCheckout(id, params),
+      update: (
+        id: string,
+        params: Parameters<P['updateCheckout']>[1],
+      ) => this.provider.updateCheckout(id, params),
 
       delete: (id: string) => this.provider.deleteCheckout(id),
     };
@@ -59,11 +63,15 @@ class PayKit<P extends PayKitProvider<any, any, any>> {
 
       retrieve: (id: string) => this.provider.retrievePayment(id),
 
-      update: (id: string, params: Parameters<P['updatePayment']>[1]) =>
-        this.provider.updatePayment(id, params),
+      update: (
+        id: string,
+        params: Parameters<P['updatePayment']>[1],
+      ) => this.provider.updatePayment(id, params),
 
-      capture: (id: string, params: Parameters<P['capturePayment']>[1]) =>
-        this.provider.capturePayment(id, params),
+      capture: (
+        id: string,
+        params: Parameters<P['capturePayment']>[1],
+      ) => this.provider.capturePayment(id, params),
 
       delete: (id: string) => this.provider.deletePayment(id),
       cancel: (id: string) => this.provider.cancelPayment(id),
@@ -75,11 +83,14 @@ class PayKit<P extends PayKitProvider<any, any, any>> {
       create: (params: Parameters<P['createSubscription']>[0]) =>
         this.provider.createSubscription(params),
 
-      update: (id: string, params: Parameters<P['updateSubscription']>[1]) =>
-        this.provider.updateSubscription(id, params),
+      update: (
+        id: string,
+        params: Parameters<P['updateSubscription']>[1],
+      ) => this.provider.updateSubscription(id, params),
 
       cancel: (id: string) => this.provider.cancelSubscription(id),
-      retrieve: (id: string) => this.provider.retrieveSubscription(id),
+      retrieve: (id: string) =>
+        this.provider.retrieveSubscription(id),
       delete: (id: string) => this.provider.deleteSubscription(id),
     };
   }
@@ -93,11 +104,17 @@ class PayKit<P extends PayKitProvider<any, any, any>> {
 
   get webhooks() {
     // Extract the raw events type from the provider's handleWebhook return type
-    type RawEvents = P extends PayKitProvider<any, any, infer R> ? R : any;
+    type RawEvents =
+      P extends PayKitProvider<any, any, infer R> ? R : any;
 
     return {
-      setup: (config: Omit<WebhookSetupConfig<RawEvents>, 'provider'>) =>
-        new Webhook<RawEvents>().setup({ ...config, provider: this.provider }),
+      setup: (
+        config: Omit<WebhookSetupConfig<RawEvents>, 'provider'>,
+      ) =>
+        new Webhook<RawEvents>().setup({
+          ...config,
+          provider: this.provider,
+        }),
     };
   }
 }

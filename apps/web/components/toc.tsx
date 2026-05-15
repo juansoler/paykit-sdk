@@ -8,11 +8,16 @@ interface DashboardTableOfContentsProps {
   toc: Toc;
 }
 
-export function DashboardTableOfContents({ toc }: DashboardTableOfContentsProps) {
+export function DashboardTableOfContents({
+  toc,
+}: DashboardTableOfContentsProps) {
   const itemIds = React.useMemo(
     () =>
       toc
-        .flatMap(item => [item.id, item?.children?.map(item => item.id)])
+        .flatMap(item => [
+          item.id,
+          item?.children?.map(item => item.id),
+        ])
         .filter(Boolean)
         .flat() as string[],
     [toc],
@@ -94,7 +99,11 @@ function Tree({ tree, level = 1, activeItem }: TreeProps) {
               {item.title}
             </a>
             {item.children?.length && (
-              <Tree tree={item.children} level={level + 1} activeItem={activeItem} />
+              <Tree
+                tree={item.children}
+                level={level + 1}
+                activeItem={activeItem}
+              />
             )}
           </li>
         );

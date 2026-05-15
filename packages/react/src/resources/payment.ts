@@ -1,4 +1,8 @@
-import { EndpointArgs, EndpointReturn, Payment } from '@paykit-sdk/core';
+import {
+  EndpointArgs,
+  EndpointReturn,
+  Payment,
+} from '@paykit-sdk/core';
 import { usePaykitContext } from '../context';
 import { useAsyncFn } from '../hooks/use-async-fn';
 

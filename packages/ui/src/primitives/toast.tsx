@@ -1,5 +1,12 @@
 import * as React from 'react';
-import { CheckCircle, XCircle, AlertCircle, Info, Loader2, X } from 'lucide-react';
+import {
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Info,
+  Loader2,
+  X,
+} from 'lucide-react';
 import { ExternalToast, Toaster as Sonner, toast } from 'sonner';
 import { cn } from '../lib/utils';
 
@@ -110,7 +117,8 @@ const ToastComponent = ({
         className={cn(
           'absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full shadow-sm',
           variantConfig.iconContainerClass,
-          !isLoading && 'cursor-pointer transition-transform hover:scale-105',
+          !isLoading &&
+            'cursor-pointer transition-transform hover:scale-105',
         )}
       >
         <Icon size={16} className={isLoading ? 'animate-spin' : ''} />
@@ -118,8 +126,12 @@ const ToastComponent = ({
 
       {/* Content */}
       <div className="flex-1 pr-4">
-        {title && <div className="mb-1 text-sm font-semibold">{title}</div>}
-        {description && <div className="text-sm opacity-90">{description}</div>}
+        {title && (
+          <div className="mb-1 text-sm font-semibold">{title}</div>
+        )}
+        {description && (
+          <div className="text-sm opacity-90">{description}</div>
+        )}
       </div>
     </div>
   );
@@ -133,7 +145,13 @@ const createToast = (
   options?: ExternalToast,
 ) => {
   return toast.custom(
-    () => <ToastComponent variant={variant} title={title} description={description} />,
+    () => (
+      <ToastComponent
+        variant={variant}
+        title={title}
+        description={description}
+      />
+    ),
     {
       duration: variant === 'loading' ? Infinity : 4000,
       ...options,
@@ -142,19 +160,37 @@ const createToast = (
 };
 
 const Toast = {
-  success: (dto: { title: string; description?: string; options?: ExternalToast }) =>
+  success: (dto: {
+    title: string;
+    description?: string;
+    options?: ExternalToast;
+  }) =>
     createToast('success', dto.title, dto.description, dto.options),
 
-  error: (dto: { title: string; description?: string; options?: ExternalToast }) =>
-    createToast('error', dto.title, dto.description, dto.options),
+  error: (dto: {
+    title: string;
+    description?: string;
+    options?: ExternalToast;
+  }) => createToast('error', dto.title, dto.description, dto.options),
 
-  warning: (dto: { title: string; description?: string; options?: ExternalToast }) =>
+  warning: (dto: {
+    title: string;
+    description?: string;
+    options?: ExternalToast;
+  }) =>
     createToast('warning', dto.title, dto.description, dto.options),
 
-  info: (dto: { title: string; description?: string; options?: ExternalToast }) =>
-    createToast('info', dto.title, dto.description, dto.options),
+  info: (dto: {
+    title: string;
+    description?: string;
+    options?: ExternalToast;
+  }) => createToast('info', dto.title, dto.description, dto.options),
 
-  loading: (dto: { title: string; description?: string; options?: ExternalToast }) =>
+  loading: (dto: {
+    title: string;
+    description?: string;
+    options?: ExternalToast;
+  }) =>
     createToast('loading', dto.title, dto.description, dto.options),
 
   promise: <T,>(
@@ -172,23 +208,32 @@ const Toast = {
     } = {},
   ) => {
     // Show loading toast immediately
-    const loadingToastId = createToast('loading', loadingMessage, undefined, {
-      duration: Infinity,
-      ...options,
-    });
+    const loadingToastId = createToast(
+      'loading',
+      loadingMessage,
+      undefined,
+      {
+        duration: Infinity,
+        ...options,
+      },
+    );
 
     // Handle promise resolution/rejection
     promise
       .then(data => {
         toast.dismiss(loadingToastId);
         const message =
-          typeof successMessage === 'function' ? successMessage(data) : successMessage;
+          typeof successMessage === 'function'
+            ? successMessage(data)
+            : successMessage;
         createToast('success', message, undefined, options);
       })
       .catch(err => {
         toast.dismiss(loadingToastId);
         const message =
-          typeof errorMessage === 'function' ? errorMessage(err) : errorMessage;
+          typeof errorMessage === 'function'
+            ? errorMessage(err)
+            : errorMessage;
         createToast('error', message, undefined, options);
       });
 

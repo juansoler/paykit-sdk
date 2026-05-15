@@ -18,15 +18,18 @@ export function createEndpointHandlers(paykit: PayKit<any>): {
   return {
     '/customer/create': params => paykit.customers.create(params),
     '/customer/retrieve': id => paykit.customers.retrieve(id),
-    '/customer/update': (id, params) => paykit.customers.update(id, params),
+    '/customer/update': (id, params) =>
+      paykit.customers.update(id, params),
     '/customer/delete': id => paykit.customers.delete(id),
 
     '/checkout/create': params => paykit.checkouts.create(params),
     '/checkout/retrieve': id => paykit.checkouts.retrieve(id),
-    '/checkout/update': (id, params) => paykit.checkouts.update(id, params),
+    '/checkout/update': (id, params) =>
+      paykit.checkouts.update(id, params),
     '/checkout/delete': id => paykit.checkouts.delete(id),
 
-    '/subscription/create': params => paykit.subscriptions.create(params),
+    '/subscription/create': params =>
+      paykit.subscriptions.create(params),
     '/subscription/retrieve': id => paykit.subscriptions.retrieve(id),
     '/subscription/update': (id, params) =>
       paykit.subscriptions.update(id, params),
@@ -35,8 +38,10 @@ export function createEndpointHandlers(paykit: PayKit<any>): {
 
     '/payment/create': params => paykit.payments.create(params),
     '/payment/retrieve': id => paykit.payments.retrieve(id),
-    '/payment/update': (id, params) => paykit.payments.update(id, params),
-    '/payment/capture': (id, params) => paykit.payments.capture(id, params),
+    '/payment/update': (id, params) =>
+      paykit.payments.update(id, params),
+    '/payment/capture': (id, params) =>
+      paykit.payments.capture(id, params),
     '/payment/cancel': id => paykit.payments.cancel(id),
     '/payment/delete': id => paykit.payments.delete(id),
 

@@ -23,14 +23,18 @@ async function getDocFromParams({ params }: DocPageProps) {
 
   if (!slug) redirect('/docs/introduction');
 
-  const doc = allDocs.find(doc => doc.slugAsParams === (slug?.join('/') || ''));
+  const doc = allDocs.find(
+    doc => doc.slugAsParams === (slug?.join('/') || ''),
+  );
 
   if (!doc) return null;
 
   return doc;
 }
 
-export async function generateMetadata({ params }: DocPageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: DocPageProps): Promise<Metadata> {
   const doc = await getDocFromParams({ params });
 
   if (!doc) return {};
@@ -84,11 +88,16 @@ export default async function DocPage({ params }: DocPageProps) {
           {doc.toc && (
             <div className="mb-6 flex items-center justify-between md:hidden!">
               <div className="text-muted-foreground flex items-center space-x-1 text-sm">
-                <Link href="/docs" className="hover:text-foreground transition-colors">
+                <Link
+                  href="/docs"
+                  className="hover:text-foreground transition-colors"
+                >
                   Docs
                 </Link>
                 <ChevronRight className="h-3.5 w-3.5" />
-                <span className="text-foreground font-medium">{doc.title}</span>
+                <span className="text-foreground font-medium">
+                  {doc.title}
+                </span>
               </div>
               <MobileToc toc={toc} />
             </div>
@@ -96,11 +105,16 @@ export default async function DocPage({ params }: DocPageProps) {
 
           {/* Desktop Breadcrumb */}
           <div className="text-muted-foreground mb-6 hidden items-center space-x-1 text-sm md:flex">
-            <Link href="/docs" className="hover:text-foreground transition-colors">
+            <Link
+              href="/docs"
+              className="hover:text-foreground transition-colors"
+            >
               Docs
             </Link>
             <ChevronRight className="h-3.5 w-3.5" />
-            <span className="text-foreground font-medium">{doc.title}</span>
+            <span className="text-foreground font-medium">
+              {doc.title}
+            </span>
           </div>
 
           <div className="mb-8 space-y-4">

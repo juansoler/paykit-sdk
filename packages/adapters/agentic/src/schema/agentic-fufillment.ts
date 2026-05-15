@@ -52,4 +52,6 @@ export const agenticFufillmentOptionSchema = z.object({
   latest_delivery_time: z.string().nullable().optional(),
 });
 
-export type AgenticFufillmentOption = z.infer<typeof agenticFufillmentOptionSchema>;
+export type AgenticFufillmentOption = z.infer<
+  typeof agenticFufillmentOptionSchema
+>;

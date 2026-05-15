@@ -378,7 +378,12 @@ export interface PaystackSubscription {
   /**
    * The status of the subscription
    */
-  status: 'active' | 'non-renewing' | 'attention' | 'completed' | 'cancelled';
+  status:
+    | 'active'
+    | 'non-renewing'
+    | 'attention'
+    | 'completed'
+    | 'cancelled';
   /**
    * The amount of the subscription
    */

@@ -1,4 +1,7 @@
-import { defineDocumentType, makeSource } from 'contentlayer/source-files';
+import {
+  defineDocumentType,
+  makeSource,
+} from 'contentlayer/source-files';
 import { join } from 'path';
 import rehypeSlug from 'rehype-slug';
 
@@ -12,7 +15,10 @@ export const Doc = defineDocumentType(() => ({
     date: { type: 'date', required: true },
     published: { type: 'boolean', default: true },
     toc: { type: 'boolean', default: true },
-    links: { type: 'json', of: { doc: { type: 'string' }, api: { type: 'string' } } },
+    links: {
+      type: 'json',
+      of: { doc: { type: 'string' }, api: { type: 'string' } },
+    },
   },
   computedFields: {
     slug: {
@@ -21,7 +27,8 @@ export const Doc = defineDocumentType(() => ({
     },
     slugAsParams: {
       type: 'string',
-      resolve: doc => doc._raw.flattenedPath.split('/').slice(1).join('/'),
+      resolve: doc =>
+        doc._raw.flattenedPath.split('/').slice(1).join('/'),
     },
   },
 }));
@@ -45,7 +52,8 @@ export const Changelog = defineDocumentType(() => ({
     },
     slugAsParams: {
       type: 'string',
-      resolve: doc => doc._raw.flattenedPath.split('/').slice(1).join('/'),
+      resolve: doc =>
+        doc._raw.flattenedPath.split('/').slice(1).join('/'),
     },
   },
 }));

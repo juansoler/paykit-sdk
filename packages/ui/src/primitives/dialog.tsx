@@ -5,20 +5,34 @@ import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { XIcon } from 'lucide-react';
 import { cn } from '../lib/utils';
 
-const Root = ({ ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) => {
+const Root = ({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Root>) => {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />;
 };
 
-const Trigger = ({ ...props }: React.ComponentProps<typeof DialogPrimitive.Trigger>) => {
-  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />;
+const Trigger = ({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Trigger>) => {
+  return (
+    <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
+  );
 };
 
-const Portal = ({ ...props }: React.ComponentProps<typeof DialogPrimitive.Portal>) => {
-  return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />;
+const Portal = ({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Portal>) => {
+  return (
+    <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
+  );
 };
 
-const Close = ({ ...props }: React.ComponentProps<typeof DialogPrimitive.Close>) => {
-  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />;
+const Close = ({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Close>) => {
+  return (
+    <DialogPrimitive.Close data-slot="dialog-close" {...props} />
+  );
 };
 
 const Overlay = ({
@@ -71,21 +85,33 @@ const Content = ({
   );
 };
 
-const Header = ({ className, ...props }: React.ComponentProps<'div'>) => {
+const Header = ({
+  className,
+  ...props
+}: React.ComponentProps<'div'>) => {
   return (
     <div
       data-slot="dialog-header"
-      className={cn('flex flex-col gap-2 text-center sm:text-left', className)}
+      className={cn(
+        'flex flex-col gap-2 text-center sm:text-left',
+        className,
+      )}
       {...props}
     />
   );
 };
 
-const Footer = ({ className, ...props }: React.ComponentProps<'div'>) => {
+const Footer = ({
+  className,
+  ...props
+}: React.ComponentProps<'div'>) => {
   return (
     <div
       data-slot="dialog-footer"
-      className={cn('flex flex-col-reverse gap-2 sm:flex-row sm:justify-end', className)}
+      className={cn(
+        'flex flex-col-reverse gap-2 sm:flex-row sm:justify-end',
+        className,
+      )}
       {...props}
     />
   );

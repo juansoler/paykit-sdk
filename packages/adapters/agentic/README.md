@@ -46,7 +46,9 @@ const session = await agenticAdapter.createAgenticCheckoutSession({
 });
 
 // Retrieve session
-const retrieved = await agenticAdapter.retrieveAgenticCheckoutSession(session.id);
+const retrieved = await agenticAdapter.retrieveAgenticCheckoutSession(
+  session.id,
+);
 ```
 
 ## Methods

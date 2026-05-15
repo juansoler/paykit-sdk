@@ -1,15 +1,25 @@
 import { setTimeout } from 'timers/promises';
 import { z } from 'zod';
-import { UnTraceableError, PAYKIT_METADATA_KEY, PaykitMetadata } from '..';
+import {
+  UnTraceableError,
+  PAYKIT_METADATA_KEY,
+  PaykitMetadata,
+} from '..';
 import { tryCatchSync } from './try-catch';
 
 export type Result<T, E = unknown> =
   | { ok: true; value: T; error?: never }
   | { ok: false; value?: never; error: E };
 
-export const OK = <V>(value: V): Result<V, never> => ({ ok: true, value });
+export const OK = <V>(value: V): Result<V, never> => ({
+  ok: true,
+  value,
+});
 
-export const ERR = <E>(error: E): Result<never, E> => ({ ok: false, error });
+export const ERR = <E>(error: E): Result<never, E> => ({
+  ok: false,
+  error,
+});
 
 export const unwrapAsync = async <T>(
   pr: Promise<Result<T, unknown>>,
@@ -44,7 +54,8 @@ export const safeEncode = <T>(value: T) => {
 export const safeDecode = <T>(value: string) => {
   return safeParse(
     value,
-    value => JSON.parse(Buffer.from(value, 'base64').toString('utf-8')) as T,
+    value =>
+      JSON.parse(Buffer.from(value, 'base64').toString('utf-8')) as T,
     'Failed to decode value',
   );
 };
@@ -126,7 +137,10 @@ export const validateRequiredKeys = <K extends string>(
   return result as Record<K, string>;
 };
 
-export const parseJSON = <T>(str: string, schema: z.ZodSchema<T>): T | null => {
+export const parseJSON = <T>(
+  str: string,
+  schema: z.ZodSchema<T>,
+): T | null => {
   try {
     const parsed = JSON.parse(str);
     return schema.parse(parsed);
@@ -187,7 +201,9 @@ export const stringifyMetadataValues = (
   );
 };
 
-export const getURLFromHeaders = (headers: Record<string, string>) => {
+export const getURLFromHeaders = (
+  headers: Record<string, string>,
+) => {
   if (headers['origin']) return headers['origin'];
 
   // Behind a proxy (most common in production)
@@ -200,9 +216,11 @@ export const getURLFromHeaders = (headers: Record<string, string>) => {
 
   // Local development (without a proxy)
   if (headers['host']) {
-    const protocol = (headers['x-forwarded-proto'] ?? 'https') as string;
+    const protocol = (headers['x-forwarded-proto'] ??
+      'https') as string;
     const host = headers['host'];
-    const path = headers['x-original-url'] ?? headers['x-forwarded-path'] ?? '';
+    const path =
+      headers['x-original-url'] ?? headers['x-forwarded-path'] ?? '';
     return `${protocol}://${host}${path}`;
   }
 

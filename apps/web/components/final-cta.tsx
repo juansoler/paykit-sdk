@@ -17,7 +17,8 @@ export const FinalCTA = () => {
               </span>
             </h2>
             <p className="text-muted-foreground mx-auto max-w-2xl text-xl">
-              Start with local development today. Deploy to any provider tomorrow.
+              Start with local development today. Deploy to any
+              provider tomorrow.
             </p>
           </div>
 

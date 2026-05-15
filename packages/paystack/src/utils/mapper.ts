@@ -25,7 +25,9 @@ export const paykitCustomer$InboundSchema = (
   data: PaystackCustomer,
 ): Customer => {
   const { fullName } = parseCustomerName({
-    name: [data.first_name, data.last_name].filter(Boolean).join(' ') || '',
+    name:
+      [data.first_name, data.last_name].filter(Boolean).join(' ') ||
+      '',
     email: data.email,
   });
 
@@ -146,16 +148,28 @@ export const paykitCheckout$InboundSchema = (
   };
 };
 
-const paystackIntervalMap: Record<string, SubscriptionBillingInterval> = {
+const paystackIntervalMap: Record<
+  string,
+  SubscriptionBillingInterval
+> = {
   daily: 'day',
   weekly: 'week',
   monthly: 'month',
   annually: 'year',
-  quarterly: { type: 'custom', durationMs: 3 * 30 * 24 * 60 * 60 * 1000 },
-  biannually: { type: 'custom', durationMs: 6 * 30 * 24 * 60 * 60 * 1000 },
+  quarterly: {
+    type: 'custom',
+    durationMs: 3 * 30 * 24 * 60 * 60 * 1000,
+  },
+  biannually: {
+    type: 'custom',
+    durationMs: 6 * 30 * 24 * 60 * 60 * 1000,
+  },
 };
 
-const paystackSubscriptionStatusMap: Record<string, Subscription['status']> = {
+const paystackSubscriptionStatusMap: Record<
+  string,
+  Subscription['status']
+> = {
   active: 'active',
   'non-renewing': 'canceled',
   cancelled: 'canceled',
@@ -179,7 +193,8 @@ export const paykitSubscription$InboundSchema = (
     current_period_start: new Date(data.createdAt),
     current_period_end: nextPaymentDate,
     item_id: data.plan?.plan_code ?? '',
-    billing_interval: paystackIntervalMap[data.plan?.interval] ?? 'month',
+    billing_interval:
+      paystackIntervalMap[data.plan?.interval] ?? 'month',
     metadata: null,
     custom_fields: null,
     requires_action: false,

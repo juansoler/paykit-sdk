@@ -34,11 +34,15 @@ export async function POST(
 ) {
   try {
     // Construct the endpoint path with full type safety
-    const endpoint = ('/' + params.endpoint.join('/')) as EndpointPath;
+    const endpoint = ('/' +
+      params.endpoint.join('/')) as EndpointPath;
     const handler = endpoints[endpoint];
 
     if (!handler) {
-      return NextResponse.json({ message: 'Endpoint not found' }, { status: 404 });
+      return NextResponse.json(
+        { message: 'Endpoint not found' },
+        { status: 404 },
+      );
     }
 
     // Parse request body
@@ -51,7 +55,12 @@ export async function POST(
   } catch (error) {
     console.error('PayKit API Error:', error);
     return NextResponse.json(
-      { message: error instanceof Error ? error.message : 'Internal server error' },
+      {
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Internal server error',
+      },
       { status: 500 },
     );
   }
@@ -97,7 +106,10 @@ export async function POST(request: NextRequest) {
 
 ```typescript
 import { paykit, endpoints } from '@/lib/paykit';
-import { createEndpointHandlers, EndpointPath } from '@paykit-sdk/core';
+import {
+  createEndpointHandlers,
+  EndpointPath,
+} from '@paykit-sdk/core';
 import express from 'express';
 
 const app = express();
@@ -112,7 +124,9 @@ app.post(
       const webhookSecret = process.env.COMGATE_SECRET;
 
       if (!webhookSecret) {
-        return res.status(500).json({ error: 'Webhook secret not configured' });
+        return res
+          .status(500)
+          .json({ error: 'Webhook secret not configured' });
       }
 
       const webhook = paykit.webhooks
@@ -143,7 +157,10 @@ app.post(
     } catch (error) {
       console.error('Webhook error:', error);
       res.status(500).json({
-        message: error instanceof Error ? error.message : 'Webhook processing failed',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Webhook processing failed',
       });
     }
   },
@@ -154,7 +171,10 @@ app.use(express.json());
 
 app.post('/api/paykit/*', async (req, res) => {
   try {
-    const endpoint = req.path.replace('/api/paykit', '') as EndpointPath;
+    const endpoint = req.path.replace(
+      '/api/paykit',
+      '',
+    ) as EndpointPath;
     const handler = endpoints[endpoint];
 
     if (!handler) {
@@ -167,7 +187,10 @@ app.post('/api/paykit/*', async (req, res) => {
     res.json({ result });
   } catch (error) {
     res.status(500).json({
-      message: error instanceof Error ? error.message : 'Internal server error',
+      message:
+        error instanceof Error
+          ? error.message
+          : 'Internal server error',
     });
   }
 });

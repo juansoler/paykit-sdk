@@ -69,11 +69,19 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://usepaykit.dev'),
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={cn(ptSans.variable, 'antialiased')}>
-        <NextTopLoader color={'hsl(var(--primary))'} height={2} showSpinner={false} />
+        <NextTopLoader
+          color={'hsl(var(--primary))'}
+          height={2}
+          showSpinner={false}
+        />
         <AppProviders>{children}</AppProviders>
         <Analytics />
       </body>

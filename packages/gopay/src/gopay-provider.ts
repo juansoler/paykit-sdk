@@ -134,7 +134,10 @@ export class GoPayProvider
       client: this._client,
       provider: this.providerName,
       tokenEndpoint: '/oauth2/token',
-      credentials: { username: opts.clientId, password: opts.clientSecret },
+      credentials: {
+        username: opts.clientId,
+        password: opts.clientSecret,
+      },
       responseAdapter: response => ({
         accessToken: response.access_token,
         expiresIn: response.expires_in,
@@ -152,11 +155,17 @@ export class GoPayProvider
     });
   }
 
-  createCheckout = async (params: CreateCheckoutSchema): Promise<Checkout> => {
+  createCheckout = async (
+    params: CreateCheckoutSchema,
+  ): Promise<Checkout> => {
     const { error, data } = createCheckoutSchema.safeParse(params);
 
     if (error)
-      throw ValidationError.fromZodError(error, 'gopay', 'createCheckout');
+      throw ValidationError.fromZodError(
+        error,
+        'gopay',
+        'createCheckout',
+      );
 
     if (!isEmailCustomer(data.customer)) {
       throw new InvalidTypeError(
@@ -199,7 +208,10 @@ export class GoPayProvider
       target: { type: 'ACCOUNT', goid: parseInt(this.opts.goId) },
       amount: Number(amount),
       currency,
-      order_number: crypto.randomBytes(8).toString('hex').slice(0, 15),
+      order_number: crypto
+        .randomBytes(8)
+        .toString('hex')
+        .slice(0, 15),
       order_description: data.metadata?.description || 'Checkout',
       items: [
         {
@@ -229,18 +241,23 @@ export class GoPayProvider
       })),
     };
 
-    const response = await this._client.post<GoPayPaymentBaseResponse>(
-      '/payments/payment',
-      {
-        body: JSON.stringify(goPayRequest),
-        headers: await this.tokenManager.getAuthHeaders(),
-      },
-    );
+    const response =
+      await this._client.post<GoPayPaymentBaseResponse>(
+        '/payments/payment',
+        {
+          body: JSON.stringify(goPayRequest),
+          headers: await this.tokenManager.getAuthHeaders(),
+        },
+      );
 
     if (!response.ok) {
-      throw new OperationFailedError('createCheckout', this.providerName, {
-        cause: new Error('Failed to create checkout'),
-      });
+      throw new OperationFailedError(
+        'createCheckout',
+        this.providerName,
+        {
+          cause: new Error('Failed to create checkout'),
+        },
+      );
     }
 
     return paykitCheckout$InboundSchema(response.value);
@@ -258,9 +275,13 @@ export class GoPayProvider
     );
 
     if (!response.ok) {
-      throw new OperationFailedError('retrieveCheckout', this.providerName, {
-        cause: new Error('Failed to retrieve checkout'),
-      });
+      throw new OperationFailedError(
+        'retrieveCheckout',
+        this.providerName,
+        {
+          cause: new Error('Failed to retrieve checkout'),
+        },
+      );
     }
 
     return paykitCheckout$InboundSchema(response.value);
@@ -284,11 +305,14 @@ export class GoPayProvider
   deleteCheckout = async (id: string): Promise<null> => {
     throw new ProviderNotSupportedError('deleteCheckout', 'gopay', {
       reason: "Gopay doesn't support deleting checkouts",
-      alternative: 'Use createCheckout() instead to create a new checkout',
+      alternative:
+        'Use createCheckout() instead to create a new checkout',
     });
   };
 
-  createCustomer = async (params: CreateCustomerParams): Promise<Customer> => {
+  createCustomer = async (
+    params: CreateCustomerParams,
+  ): Promise<Customer> => {
     throw new ProviderNotSupportedError('createCustomer', 'gopay', {
       reason: "Gopay doesn't support creating customers",
     });
@@ -318,10 +342,15 @@ export class GoPayProvider
   createSubscription = async (
     params: CreateSubscriptionSchema<GoPayMetadata['subscription']>,
   ): Promise<Subscription> => {
-    const { error, data } = createSubscriptionSchema.safeParse(params);
+    const { error, data } =
+      createSubscriptionSchema.safeParse(params);
 
     if (error)
-      throw ValidationError.fromZodError(error, 'gopay', 'createSubscription');
+      throw ValidationError.fromZodError(
+        error,
+        'gopay',
+        'createSubscription',
+      );
 
     // Customer must be an object with email
     if (
@@ -353,13 +382,17 @@ export class GoPayProvider
 
     const billingInterval = data.billing_interval;
     const isCustom =
-      typeof billingInterval === 'object' && billingInterval.type === 'custom';
+      typeof billingInterval === 'object' &&
+      billingInterval.type === 'custom';
     const isYear = billingInterval === 'year';
     const isOnDemand = isCustom || isYear;
 
     type GoPayCycle = 'DAY' | 'WEEK' | 'MONTH' | 'ON_DEMAND';
 
-    const intervalMap: Record<'day' | 'week' | 'month' | 'year', GoPayCycle> = {
+    const intervalMap: Record<
+      'day' | 'week' | 'month' | 'year',
+      GoPayCycle
+    > = {
       day: 'DAY',
       week: 'WEEK',
       month: 'MONTH',
@@ -368,7 +401,9 @@ export class GoPayProvider
 
     const recurrenceCycle: GoPayCycle = isCustom
       ? 'ON_DEMAND'
-      : intervalMap[billingInterval as 'day' | 'week' | 'month' | 'year'];
+      : intervalMap[
+          billingInterval as 'day' | 'week' | 'month' | 'year'
+        ];
 
     if (this.opts.debug) {
       if (isYear) {
@@ -424,7 +459,9 @@ export class GoPayProvider
             : GOPAY_MAX_DATE;
         }
         // year → give a generous 5-year authorization window
-        return toDateString(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000);
+        return toDateString(
+          Date.now() + 5 * 365 * 24 * 60 * 60 * 1000,
+        );
       }
       throw new Error(
         `[PayKit/GoPay] Unhandled recurrence cycle: ${recurrenceCycle}`,
@@ -455,7 +492,10 @@ export class GoPayProvider
       target: { type: 'ACCOUNT', goid: parseInt(this.opts.goId) },
       amount: Number(data.amount),
       currency: data.currency ?? 'CZK',
-      order_number: crypto.randomBytes(8).toString('hex').slice(0, 15),
+      order_number: crypto
+        .randomBytes(8)
+        .toString('hex')
+        .slice(0, 15),
       order_description: data.provider_metadata?.description
         ? (data.provider_metadata.description as string)
         : `Subscription by ${data.customer.email}`,
@@ -484,20 +524,25 @@ export class GoPayProvider
       }).map(([name, value]) => ({ name, value: String(value) })),
     };
 
-    const response = await this._client.post<GoPaySubscriptionResponse>(
-      '/payments/payment',
-      {
-        body: JSON.stringify(goPaySubscriptionOptions),
-        headers: await this.tokenManager.getAuthHeaders(),
-      },
-    );
+    const response =
+      await this._client.post<GoPaySubscriptionResponse>(
+        '/payments/payment',
+        {
+          body: JSON.stringify(goPaySubscriptionOptions),
+          headers: await this.tokenManager.getAuthHeaders(),
+        },
+      );
 
     if (!response.ok) {
-      throw new OperationFailedError('createSubscription', this.providerName, {
-        cause: new Error(
-          `[PayKit/GoPay] Failed to create subscription. Error: ${response.error}`,
-        ),
-      });
+      throw new OperationFailedError(
+        'createSubscription',
+        this.providerName,
+        {
+          cause: new Error(
+            `[PayKit/GoPay] Failed to create subscription. Error: ${response.error}`,
+          ),
+        },
+      );
     }
 
     return paykitSubscription$InboundSchema(response.value);
@@ -528,9 +573,13 @@ export class GoPayProvider
     const existingSubscription = await this.retrieveSubscription(id);
 
     if (!existingSubscription) {
-      throw new OperationFailedError('cancelSubscription', this.providerName, {
-        cause: new Error('Failed to retrieve subscription'),
-      });
+      throw new OperationFailedError(
+        'cancelSubscription',
+        this.providerName,
+        {
+          cause: new Error('Failed to retrieve subscription'),
+        },
+      );
     }
 
     const response = await this._client.post<{
@@ -545,7 +594,9 @@ export class GoPayProvider
 
     return {
       ...existingSubscription,
-      ...(response.value?.result == 'FINISHED' && { status: 'canceled' }),
+      ...(response.value?.result == 'FINISHED' && {
+        status: 'canceled',
+      }),
     };
   };
 
@@ -554,13 +605,16 @@ export class GoPayProvider
     return null;
   };
 
-  retrieveSubscription = async (id: string): Promise<Subscription | null> => {
-    const response = await this._client.get<GoPaySubscriptionResponse>(
-      `/payments/payment/${id}`,
-      {
-        headers: await this.tokenManager.getAuthHeaders(),
-      },
-    );
+  retrieveSubscription = async (
+    id: string,
+  ): Promise<Subscription | null> => {
+    const response =
+      await this._client.get<GoPaySubscriptionResponse>(
+        `/payments/payment/${id}`,
+        {
+          headers: await this.tokenManager.getAuthHeaders(),
+        },
+      );
 
     if (!response.ok) {
       throw new OperationFailedError(
@@ -575,7 +629,9 @@ export class GoPayProvider
     return paykitSubscription$InboundSchema(response.value);
   };
 
-  createPayment = async (params: CreatePaymentSchema): Promise<Payment> => {
+  createPayment = async (
+    params: CreatePaymentSchema,
+  ): Promise<Payment> => {
     const { error, data } = createPaymentSchema.safeParse(params);
 
     if (error)
@@ -619,31 +675,42 @@ export class GoPayProvider
       target: { type: 'ACCOUNT', goid: parseInt(this.opts.goId) },
       amount: data.amount,
       currency: data.currency ?? 'CZK',
-      order_number: crypto.randomBytes(8).toString('hex').slice(0, 15),
+      order_number: crypto
+        .randomBytes(8)
+        .toString('hex')
+        .slice(0, 15),
       order_description: `Payment for ${data.item_id} by ${data.customer.email}`,
       items: [{ name: data.item_id, amount: data.amount, count: 1 }],
       preauthorization: false, // automatically captures the payment
       additional_params: Object.entries({
         ...data.metadata,
-        [PAYKIT_METADATA_KEY]: JSON.stringify({ itemId: data.item_id, qty: 1 }),
+        [PAYKIT_METADATA_KEY]: JSON.stringify({
+          itemId: data.item_id,
+          qty: 1,
+        }),
       }).map(([name, value]) => ({
         name,
         value: String(value),
       })),
     };
 
-    const response = await this._client.post<GoPayPaymentBaseResponse>(
-      '/payments/payment',
-      {
-        body: JSON.stringify(goPayRequest),
-        headers: await this.tokenManager.getAuthHeaders(),
-      },
-    );
+    const response =
+      await this._client.post<GoPayPaymentBaseResponse>(
+        '/payments/payment',
+        {
+          body: JSON.stringify(goPayRequest),
+          headers: await this.tokenManager.getAuthHeaders(),
+        },
+      );
 
     if (!response.ok) {
-      throw new OperationFailedError('createPayment', this.providerName, {
-        cause: new Error('Failed to create payment'),
-      });
+      throw new OperationFailedError(
+        'createPayment',
+        this.providerName,
+        {
+          cause: new Error('Failed to create payment'),
+        },
+      );
     }
 
     return paykitPayment$InboundSchema(response.value);
@@ -661,19 +728,27 @@ export class GoPayProvider
     );
 
     if (!response.ok) {
-      throw new OperationFailedError('retrievePayment', this.providerName, {
-        cause: new Error('Failed to retrieve payment'),
-      });
+      throw new OperationFailedError(
+        'retrievePayment',
+        this.providerName,
+        {
+          cause: new Error('Failed to retrieve payment'),
+        },
+      );
     }
 
     return paykitPayment$InboundSchema(response.value);
   };
 
   deletePayment = async (id: string): Promise<null> => {
-    throw new ProviderNotSupportedError('deletePayment', this.providerName, {
-      reason: 'GoPay does not support deleting payments, use the',
-      alternative: 'Use createRefund() instead to refund payments',
-    });
+    throw new ProviderNotSupportedError(
+      'deletePayment',
+      this.providerName,
+      {
+        reason: 'GoPay does not support deleting payments, use the',
+        alternative: 'Use createRefund() instead to refund payments',
+      },
+    );
   };
 
   capturePayment = async (
@@ -686,9 +761,13 @@ export class GoPayProvider
     );
 
     if (!payment.ok) {
-      throw new OperationFailedError('capturePayment', this.providerName, {
-        cause: new Error('Failed to retrieve payment'),
-      });
+      throw new OperationFailedError(
+        'capturePayment',
+        this.providerName,
+        {
+          cause: new Error('Failed to retrieve payment'),
+        },
+      );
     }
 
     const { item, qty } = JSON.parse(
@@ -700,9 +779,13 @@ export class GoPayProvider
     );
 
     if (!payment) {
-      throw new OperationFailedError('capturePayment', this.providerName, {
-        cause: new Error('Payment not found after capture'),
-      });
+      throw new OperationFailedError(
+        'capturePayment',
+        this.providerName,
+        {
+          cause: new Error('Payment not found after capture'),
+        },
+      );
     }
 
     const captureBody = {
@@ -722,17 +805,22 @@ export class GoPayProvider
   };
 
   cancelPayment = async (id: string): Promise<Payment> => {
-    const response = await this._client.post<GoPayPaymentBaseResponse>(
-      `/payments/payment/${id}/void-authorization`,
-      { headers: await this.tokenManager.getAuthHeaders() },
-    );
+    const response =
+      await this._client.post<GoPayPaymentBaseResponse>(
+        `/payments/payment/${id}/void-authorization`,
+        { headers: await this.tokenManager.getAuthHeaders() },
+      );
 
     const payment = await this.retrievePayment(id);
 
     if (!payment) {
-      throw new OperationFailedError('cancelPayment', this.providerName, {
-        cause: new Error('Payment not found after cancellation'),
-      });
+      throw new OperationFailedError(
+        'cancelPayment',
+        this.providerName,
+        {
+          cause: new Error('Payment not found after cancellation'),
+        },
+      );
     }
 
     return payment;
@@ -750,9 +838,13 @@ export class GoPayProvider
     const existing = await this.retrievePayment(id);
 
     if (!existing) {
-      throw new OperationFailedError('updatePayment', this.providerName, {
-        cause: new Error('Failed to retrieve payment'),
-      });
+      throw new OperationFailedError(
+        'updatePayment',
+        this.providerName,
+        {
+          cause: new Error('Failed to retrieve payment'),
+        },
+      );
     }
 
     return existing;
@@ -772,16 +864,22 @@ export class GoPayProvider
     const payment = await this.retrievePayment(data.payment_id);
 
     if (!payment) {
-      throw new OperationFailedError('createRefund', this.providerName, {
-        cause: new Error('Failed to retrieve payment'),
-      });
+      throw new OperationFailedError(
+        'createRefund',
+        this.providerName,
+        {
+          cause: new Error('Failed to retrieve payment'),
+        },
+      );
     }
 
     const response = await this._client.post<{
       id: number;
       result: LooseAutoComplete<'FINISHED'>;
     }>(`/payments/payment/${data.payment_id}/refund`, {
-      body: new URLSearchParams({ amount: String(data.amount) }).toString(),
+      body: new URLSearchParams({
+        amount: String(data.amount),
+      }).toString(),
       headers: {
         ...(await this.tokenManager.getAuthHeaders()),
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -789,9 +887,13 @@ export class GoPayProvider
     });
 
     if (!response.ok) {
-      throw new OperationFailedError('createRefund', this.providerName, {
-        cause: new Error('Failed to create refund'),
-      });
+      throw new OperationFailedError(
+        'createRefund',
+        this.providerName,
+        {
+          cause: new Error('Failed to create refund'),
+        },
+      );
     }
 
     return {
@@ -853,7 +955,10 @@ export class GoPayProvider
       );
     }
 
-    const statusMap: Record<string, Payment['status'] | '__INDETERMINATE'> = {
+    const statusMap: Record<
+      string,
+      Payment['status'] | '__INDETERMINATE'
+    > = {
       CREATED: 'pending',
       PAYMENT_METHOD_CHOSEN: 'processing',
       PAID: 'succeeded',
@@ -874,7 +979,8 @@ export class GoPayProvider
     > = {
       __INDETERMINATE: data => {
         const isRefundEvent =
-          data.state === 'REFUNDED' || data.state === 'PARTIALLY_REFUNDED';
+          data.state === 'REFUNDED' ||
+          data.state === 'PARTIALLY_REFUNDED';
 
         if (isRefundEvent) {
           const refund = paykitRefund$InboundSchema(data);
@@ -933,8 +1039,8 @@ export class GoPayProvider
 
         const isCancellingSubscription =
           parentId &&
-          (data as GoPaySubscriptionResponse).recurrence?.recurrence_state ==
-            'STOPPED';
+          (data as GoPaySubscriptionResponse).recurrence
+            ?.recurrence_state == 'STOPPED';
 
         const subscription = paykitSubscription$InboundSchema(
           data as GoPaySubscriptionResponse,
