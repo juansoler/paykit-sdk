@@ -1,8 +1,5 @@
 import { validateRequiredKeys } from '@paykit-sdk/core';
-import {
-  PaystackProvider,
-  PaystackOptions,
-} from './paystack-provider';
+import { PaystackProvider, PaystackOptions } from './paystack-provider';
 
 export const createPaystack = (config: PaystackOptions) =>
   new PaystackProvider(config);
@@ -23,5 +20,4 @@ export const paystack = () => {
   });
 };
 
-export { PaystackProvider };
-export type { PaystackOptions };
+export { PaystackProvider, type PaystackOptions };
