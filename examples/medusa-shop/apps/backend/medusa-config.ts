@@ -1,7 +1,11 @@
-import { loadEnv, defineConfig, Modules } from '@medusajs/framework/utils'
-import { gopay } from '@paykit-sdk/gopay'
+import {
+  loadEnv,
+  defineConfig,
+  Modules,
+} from '@medusajs/framework/utils';
+import { gopay } from '@paykit-sdk/gopay';
 
-loadEnv(process.env.NODE_ENV || 'development', process.cwd())
+loadEnv(process.env.NODE_ENV || 'development', process.cwd());
 
 module.exports = defineConfig({
   projectConfig: {
@@ -10,18 +14,18 @@ module.exports = defineConfig({
       storeCors: process.env.STORE_CORS!,
       adminCors: process.env.ADMIN_CORS!,
       authCors: process.env.AUTH_CORS!,
-      jwtSecret: process.env.JWT_SECRET || "supersecret",
-      cookieSecret: process.env.COOKIE_SECRET || "supersecret",
-    }
+      jwtSecret: process.env.JWT_SECRET || 'supersecret',
+      cookieSecret: process.env.COOKIE_SECRET || 'supersecret',
+    },
   },
   modules: [
     {
-      resolve: "@medusajs/medusa/payment",
+      resolve: '@medusajs/medusa/payment',
       options: {
         providers: [
           {
-            resolve: "@paykit-sdk/medusajs",
-            id: "gopay",
+            resolve: '@paykit-sdk/medusajs',
+            id: 'gopay',
             options: {
               provider: gopay(),
               webhookSecret: process.env.GOPAY_WEBHOOK_SECRET!,
@@ -32,4 +36,4 @@ module.exports = defineConfig({
       },
     },
   ],
-})
+});

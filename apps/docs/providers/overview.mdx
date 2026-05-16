@@ -7,10 +7,9 @@ All providers implement the same interface. Swap by changing one import — no o
 
 ```typescript
 // Before
-import { stripe } from '@paykit-sdk/stripe';
-
 // After
 import { paystack } from '@paykit-sdk/paystack';
+import { stripe } from '@paykit-sdk/stripe';
 
 export const paykit = new PayKit(paystack()); // everything else is identical
 ```

@@ -83,7 +83,7 @@ export async function signup(_currentState: unknown, formData: FormData) {
     const { customer: createdCustomer } = await sdk.store.customer.create(
       customerForm,
       {},
-      headers
+      headers,
     )
 
     const loginToken = await sdk.auth.login("customer", "emailpass", {
@@ -160,7 +160,7 @@ export async function transferCart() {
 
 export const addCustomerAddress = async (
   currentState: Record<string, unknown>,
-  formData: FormData
+  formData: FormData,
 ): Promise<{ success: boolean; error: string | null }> => {
   const isDefaultBilling = (currentState.isDefaultBilling as boolean) || false
   const isDefaultShipping = (currentState.isDefaultShipping as boolean) || false
@@ -197,7 +197,7 @@ export const addCustomerAddress = async (
 }
 
 export const deleteCustomerAddress = async (
-  addressId: string
+  addressId: string,
 ): Promise<void> => {
   const headers = {
     ...(await getAuthHeaders()),
@@ -217,7 +217,7 @@ export const deleteCustomerAddress = async (
 
 export const updateCustomerAddress = async (
   currentState: Record<string, unknown>,
-  formData: FormData
+  formData: FormData,
 ): Promise<{ success: boolean; error: string | null }> => {
   const addressId =
     (currentState.addressId as string) || (formData.get("addressId") as string)

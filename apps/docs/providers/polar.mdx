@@ -23,6 +23,7 @@ npm install @paykit-sdk/polar
     POLAR_ACCESS_TOKEN=polar_oat_...
     POLAR_WEBHOOK_SECRET=your-webhook-secret
     ```
+
   </Tab>
   <Tab title="Direct config">
     ```typescript
@@ -33,6 +34,7 @@ npm install @paykit-sdk/polar
       createPolar({ accessToken: 'polar_oat_...', isSandbox: true }),
     );
     ```
+
   </Tab>
 </Tabs>
 
@@ -53,10 +55,18 @@ Enable these events in your Polar dashboard:
 ```typescript
 const webhook = paykit.webhooks
   .setup({ webhookSecret: process.env.POLAR_WEBHOOK_SECRET! })
-  .on('payment.created', async event => { /* ... */ })
-  .on('subscription.created', async event => { /* ... */ })
-  .on('customer.created', async event => { /* ... */ })
-  .on('refund.created', async event => { /* ... */ });
+  .on('payment.created', async event => {
+    /* ... */
+  })
+  .on('subscription.created', async event => {
+    /* ... */
+  })
+  .on('customer.created', async event => {
+    /* ... */
+  })
+  .on('refund.created', async event => {
+    /* ... */
+  });
 
 await webhook.handle({
   body: rawBody,
@@ -73,5 +83,7 @@ paykit.webhooks
   .on('polar.order.paid', async event => {
     // typed against Polar's API types
   })
-  .on('polar.subscription.revoked', async event => { /* ... */ });
+  .on('polar.subscription.revoked', async event => {
+    /* ... */
+  });
 ```

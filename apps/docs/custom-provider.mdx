@@ -75,21 +75,35 @@ export class MyProvider
         Authorization: `Bearer ${opts.apiKey}`,
         'Content-Type': 'application/json',
       },
-      retryOptions: { max: 3, baseDelay: 1000, debug: opts.debug ?? false },
+      retryOptions: {
+        max: 3,
+        baseDelay: 1000,
+        debug: opts.debug ?? false,
+      },
     });
   }
 
-  get _native() { return null; }
+  get _native() {
+    return null;
+  }
 
   createCheckout = async (
     params: CreateCheckoutSchema<MyMetadata['checkout']>,
   ): Promise<Checkout> => {
     const { error, data } = createCheckoutSchema.safeParse(params);
-    if (error) throw ValidationError.fromZodError(error, this.providerName, 'createCheckout');
+    if (error)
+      throw ValidationError.fromZodError(
+        error,
+        this.providerName,
+        'createCheckout',
+      );
 
-    const res = await this._client.post<Record<string, unknown>>('/checkouts', {
-      body: JSON.stringify(data),
-    });
+    const res = await this._client.post<Record<string, unknown>>(
+      '/checkouts',
+      {
+        body: JSON.stringify(data),
+      },
+    );
     if (!res.ok) throw new Error('Failed to create checkout');
     return res.value as unknown as Checkout;
   };
@@ -97,15 +111,22 @@ export class MyProvider
   // Mark operations not supported by this provider
   updateCheckout = (_id: string) =>
     Promise.reject(
-      new ProviderNotSupportedError('updateCheckout', this.providerName, {
-        reason: 'This provider does not support modifying checkouts after creation',
-      }),
+      new ProviderNotSupportedError(
+        'updateCheckout',
+        this.providerName,
+        {
+          reason:
+            'This provider does not support modifying checkouts after creation',
+        },
+      ),
     );
 
   // Mark operations planned for the future
   deleteCheckout = (_id: string) =>
     Promise.reject(
-      new NotImplementedError('deleteCheckout', this.providerName, { futureSupport: true }),
+      new NotImplementedError('deleteCheckout', this.providerName, {
+        futureSupport: true,
+      }),
     );
 
   // ... implement remaining required methods
@@ -125,11 +146,11 @@ export class MyProvider
 
 ## Error helpers
 
-| Class | Use for |
-|---|---|
-| `ValidationError.fromZodError(err, provider, method)` | Invalid input |
-| `ProviderNotSupportedError(method, provider, { reason })` | Operations the provider will never support |
-| `NotImplementedError(method, provider, { futureSupport })` | Not built yet |
+| Class                                                      | Use for                                    |
+| ---------------------------------------------------------- | ------------------------------------------ |
+| `ValidationError.fromZodError(err, provider, method)`      | Invalid input                              |
+| `ProviderNotSupportedError(method, provider, { reason })`  | Operations the provider will never support |
+| `NotImplementedError(method, provider, { futureSupport })` | Not built yet                              |
 
 ## Register it
 

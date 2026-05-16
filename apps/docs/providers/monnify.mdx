@@ -24,6 +24,7 @@ npm install @paykit-sdk/monnify
     MONNIFY_SECRET_KEY=your-secret-key
     MONNIFY_SANDBOX=true
     ```
+
   </Tab>
   <Tab title="Direct config">
     ```typescript
@@ -38,6 +39,7 @@ npm install @paykit-sdk/monnify
       }),
     );
     ```
+
   </Tab>
 </Tabs>
 
@@ -56,8 +58,12 @@ Enable these events in your Monnify dashboard:
 ```typescript
 const webhook = paykit.webhooks
   .setup({ webhookSecret: process.env.MONNIFY_WEBHOOK_SECRET! })
-  .on('payment.created', async event => { /* ... */ })
-  .on('payment.updated', async event => { /* ... */ });
+  .on('payment.created', async event => {
+    /* ... */
+  })
+  .on('payment.updated', async event => {
+    /* ... */
+  });
 
 await webhook.handle({
   body: rawBody,

@@ -23,6 +23,7 @@ npm install @paykit-sdk/paystack
     PAYSTACK_SECRET_KEY=sk_test_...
     PAYSTACK_WEBHOOK_SECRET=your-webhook-secret
     ```
+
   </Tab>
   <Tab title="Direct config">
     ```typescript
@@ -33,6 +34,7 @@ npm install @paykit-sdk/paystack
       createPaystack({ secretKey: 'sk_test_...', isSandbox: true }),
     );
     ```
+
   </Tab>
 </Tabs>
 
@@ -64,10 +66,18 @@ Paystack signs webhooks with HMAC-SHA512 via the `x-paystack-signature` header.
 ```typescript
 const webhook = paykit.webhooks
   .setup({ webhookSecret: process.env.PAYSTACK_WEBHOOK_SECRET! })
-  .on('payment.created', async event => { /* ... */ })
-  .on('subscription.created', async event => { /* ... */ })
-  .on('customer.created', async event => { /* ... */ })
-  .on('invoice.generated', async event => { /* ... */ });
+  .on('payment.created', async event => {
+    /* ... */
+  })
+  .on('subscription.created', async event => {
+    /* ... */
+  })
+  .on('customer.created', async event => {
+    /* ... */
+  })
+  .on('invoice.generated', async event => {
+    /* ... */
+  });
 
 await webhook.handle({
   body: rawBody,
@@ -96,17 +106,17 @@ paykit.webhooks
 
 All available raw events:
 
-| Event | Data type |
-|---|---|
-| `paystack.charge.success` | `PaystackTransaction` |
-| `paystack.charge.dispute.create/remind/resolve` | `PaystackDispute` |
-| `paystack.customeridentification.success/failed` | `PaystackCustomerIdentification` |
-| `paystack.dedicatedaccount.assign.success/failed` | `PaystackDVAAssignment` |
-| `paystack.invoice.create/update/payment_failed` | `PaystackInvoice` |
-| `paystack.paymentrequest.pending/success` | `PaystackPaymentRequest` |
-| `paystack.refund.failed/pending/processed/processing` | `PaystackRefund` |
-| `paystack.subscription.create/enable/disable/not_renew` | `PaystackSubscription` |
-| `paystack.transfer.success/failed/reversed` | `PaystackTransfer` |
+| Event                                                   | Data type                        |
+| ------------------------------------------------------- | -------------------------------- |
+| `paystack.charge.success`                               | `PaystackTransaction`            |
+| `paystack.charge.dispute.create/remind/resolve`         | `PaystackDispute`                |
+| `paystack.customeridentification.success/failed`        | `PaystackCustomerIdentification` |
+| `paystack.dedicatedaccount.assign.success/failed`       | `PaystackDVAAssignment`          |
+| `paystack.invoice.create/update/payment_failed`         | `PaystackInvoice`                |
+| `paystack.paymentrequest.pending/success`               | `PaystackPaymentRequest`         |
+| `paystack.refund.failed/pending/processed/processing`   | `PaystackRefund`                 |
+| `paystack.subscription.create/enable/disable/not_renew` | `PaystackSubscription`           |
+| `paystack.transfer.success/failed/reversed`             | `PaystackTransfer`               |
 
 ## provider_metadata
 

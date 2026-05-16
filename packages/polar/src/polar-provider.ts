@@ -116,7 +116,9 @@ export class PolarProvider
 
     const { accessToken, isSandbox, debug = true, ...rest } = config;
 
-    const serverURL = isSandbox ? this.sandboxURL : this.productionURL;
+    const serverURL = isSandbox
+      ? this.sandboxURL
+      : this.productionURL;
 
     this.polar = new Polar({ accessToken, serverURL, ...rest });
     this.refunds = new Refunds({ accessToken, serverURL, ...rest });
@@ -129,7 +131,9 @@ export class PolarProvider
   /**
    * Checkout management
    */
-  createCheckout = async (params: CreateCheckoutSchema): Promise<Checkout> => {
+  createCheckout = async (
+    params: CreateCheckoutSchema,
+  ): Promise<Checkout> => {
     const { error, data } = createCheckoutSchema.safeParse(params);
 
     if (error) {
@@ -151,7 +155,10 @@ export class PolarProvider
       successUrl: data.success_url,
     };
 
-    if (typeof data.customer === 'object' && 'email' in data.customer) {
+    if (
+      typeof data.customer === 'object' &&
+      'email' in data.customer
+    ) {
       checkoutCreateOptions.customerEmail = data.customer.email;
     } else if (typeof data.customer === 'string') {
       checkoutCreateOptions.customerId = data.customer;
@@ -174,7 +181,9 @@ export class PolarProvider
       };
     }
 
-    const response = await this.polar.checkouts.create(checkoutCreateOptions);
+    const response = await this.polar.checkouts.create(
+      checkoutCreateOptions,
+    );
 
     return Checkout$inboundSchema(response);
   };
@@ -193,7 +202,8 @@ export class PolarProvider
       );
     }
 
-    const { metadata, item_id, provider_metadata, ...restData } = data;
+    const { metadata, item_id, provider_metadata, ...restData } =
+      data;
 
     const response = await this.polar.checkouts.update({
       id,
@@ -235,7 +245,9 @@ export class PolarProvider
   /**
    * Customer management
    */
-  createCustomer = async (params: CreateCustomerParams): Promise<Customer> => {
+  createCustomer = async (
+    params: CreateCustomerParams,
+  ): Promise<Customer> => {
     const { error, data } = createCustomerSchema.safeParse(params);
 
     if (error) {
@@ -248,7 +260,10 @@ export class PolarProvider
 
     const { email, metadata } = data;
 
-    const { fullName: name } = parseCustomerName({ name: data.name, email });
+    const { fullName: name } = parseCustomerName({
+      name: data.name,
+      email,
+    });
 
     const response = await this.polar.customers.create({
       email,
@@ -324,9 +339,13 @@ export class PolarProvider
   createSubscription = async (
     params: CreateSubscriptionSchema,
   ): Promise<Subscription> => {
-    throw new ProviderNotSupportedError('createSubscription', 'Polar', {
-      reason: 'Subscriptions can only be created through checkouts',
-    });
+    throw new ProviderNotSupportedError(
+      'createSubscription',
+      'Polar',
+      {
+        reason: 'Subscriptions can only be created through checkouts',
+      },
+    );
   };
 
   cancelSubscription = async (id: string): Promise<Subscription> => {
@@ -347,7 +366,9 @@ export class PolarProvider
     return Subscription$inboundSchema(subscription);
   };
 
-  retrieveSubscription = async (id: string): Promise<Subscription> => {
+  retrieveSubscription = async (
+    id: string,
+  ): Promise<Subscription> => {
     const { error } = retrieveSubscriptionSchema.safeParse({ id });
 
     if (error) {
@@ -419,7 +440,9 @@ export class PolarProvider
     return (await this.cancelSubscription(id)) === null ? null : null;
   };
 
-  createPayment = async (params: CreatePaymentSchema): Promise<Payment> => {
+  createPayment = async (
+    params: CreatePaymentSchema,
+  ): Promise<Payment> => {
     const { error, data } = createPaymentSchema.safeParse(params);
 
     if (error) {
@@ -430,7 +453,9 @@ export class PolarProvider
       );
     }
 
-    const paymentMetadata = stringifyMetadataValues(data.metadata ?? {});
+    const paymentMetadata = stringifyMetadataValues(
+      data.metadata ?? {},
+    );
 
     const checkoutCreateOptions: CheckoutCreate = {
       ...(data.provider_metadata && { ...data.provider_metadata }),
@@ -487,7 +512,9 @@ export class PolarProvider
 
     const { provider_metadata, ...rest } = data;
 
-    const paymentMetadata = stringifyMetadataValues(rest.metadata ?? {});
+    const paymentMetadata = stringifyMetadataValues(
+      rest.metadata ?? {},
+    );
 
     const checkoutResponse = await this.polar.checkouts.update({
       id,
@@ -521,15 +548,23 @@ export class PolarProvider
   };
 
   cancelPayment = async (id: string): Promise<Payment> => {
-    throw new ProviderNotSupportedError('cancelPayment', this.providerName, {
-      reason: 'Polar does not support canceling payments',
-    });
+    throw new ProviderNotSupportedError(
+      'cancelPayment',
+      this.providerName,
+      {
+        reason: 'Polar does not support canceling payments',
+      },
+    );
   };
 
   deletePayment = async (id: string): Promise<null> => {
-    throw new ProviderNotSupportedError('deletePayment', this.providerName, {
-      reason: 'Polar does not support deleting payments',
-    });
+    throw new ProviderNotSupportedError(
+      'deletePayment',
+      this.providerName,
+      {
+        reason: 'Polar does not support deleting payments',
+      },
+    );
   };
 
   retrievePayment = async (id: string): Promise<Payment> => {
@@ -538,7 +573,9 @@ export class PolarProvider
     return Payment$inboundSchema(response);
   };
 
-  createRefund = async (params: CreateRefundSchema): Promise<Refund> => {
+  createRefund = async (
+    params: CreateRefundSchema,
+  ): Promise<Refund> => {
     const { error, data } = createRefundSchema.safeParse(params);
 
     if (error) {
@@ -605,7 +642,11 @@ export class PolarProvider
     const webhookTimestamp = (headersAsObject['webhook-timestamp'] ||
       '0') as string;
 
-    const { data, type } = validateEvent(body, headersAsObject, webhookSecret);
+    const { data, type } = validateEvent(
+      body,
+      headersAsObject,
+      webhookSecret,
+    );
 
     const results: Array<WebhookEventPayload<PolarRawEvents>> = [];
 
@@ -617,7 +658,6 @@ export class PolarProvider
       is_raw: true,
     });
 
-    // 3. Process Standard Mappings
     const processStandard = (): Array<
       WebhookEventPayload<PolarRawEvents>
     > | null => {
@@ -644,7 +684,9 @@ export class PolarProvider
                     ? { email: polarOrder.customer.email }
                     : null,
                 status: 'succeeded',
-                metadata: stringifyMetadataValues(polarOrder.metadata ?? {}),
+                metadata: stringifyMetadataValues(
+                  polarOrder.metadata ?? {},
+                ),
                 item_id: polarOrder.product.id,
                 requires_action: false,
                 payment_url: null,
@@ -681,8 +723,13 @@ export class PolarProvider
                   : polarOrder.customer?.email
                     ? { email: polarOrder.customer.email }
                     : null,
-                status: polarOrder.status === 'paid' ? 'succeeded' : 'pending',
-                metadata: stringifyMetadataValues(polarOrder.metadata ?? {}),
+                status:
+                  polarOrder.status === 'paid'
+                    ? 'succeeded'
+                    : 'pending',
+                metadata: stringifyMetadataValues(
+                  polarOrder.metadata ?? {},
+                ),
                 item_id: polarOrder.product.id,
                 requires_action: polarOrder.status !== 'paid',
                 payment_url: null,
@@ -725,7 +772,9 @@ export class PolarProvider
                   : 'subscription.updated',
               created: parseInt(webhookTimestamp),
               id: webhookId,
-              data: Subscription$inboundSchema(data as PolarSubscription),
+              data: Subscription$inboundSchema(
+                data as PolarSubscription,
+              ),
             }),
           ];
 
@@ -735,7 +784,9 @@ export class PolarProvider
               type: 'subscription.canceled',
               created: parseInt(webhookTimestamp),
               id: webhookId,
-              data: Subscription$inboundSchema(data as PolarSubscription),
+              data: Subscription$inboundSchema(
+                data as PolarSubscription,
+              ),
             }),
           ];
 

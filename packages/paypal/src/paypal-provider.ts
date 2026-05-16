@@ -713,9 +713,7 @@ export class PayPalProvider
               data:
                 eventType === 'CHECKOUT.ORDER.COMPLETED'
                   ? PaymentWebhook$inboundSchema(resource)
-                  : PaymentCaptureWebhook$inboundSchema(
-                      resource,
-                    ),
+                  : PaymentCaptureWebhook$inboundSchema(resource),
             }),
           ];
 

@@ -23,6 +23,7 @@ npm install @paykit-sdk/stripe
     STRIPE_API_KEY=sk_test_...
     STRIPE_WEBHOOK_SECRET=whsec_...
     ```
+
   </Tab>
   <Tab title="Direct config">
     ```typescript
@@ -33,6 +34,7 @@ npm install @paykit-sdk/stripe
       createStripe({ apiKey: 'sk_test_...', isSandbox: true }),
     );
     ```
+
   </Tab>
 </Tabs>
 
@@ -60,10 +62,18 @@ Enable these events in your Stripe dashboard:
 ```typescript
 const webhook = paykit.webhooks
   .setup({ webhookSecret: process.env.STRIPE_WEBHOOK_SECRET! })
-  .on('payment.created', async event => { /* ... */ })
-  .on('subscription.created', async event => { /* ... */ })
-  .on('customer.created', async event => { /* ... */ })
-  .on('invoice.generated', async event => { /* ... */ });
+  .on('payment.created', async event => {
+    /* ... */
+  })
+  .on('subscription.created', async event => {
+    /* ... */
+  })
+  .on('customer.created', async event => {
+    /* ... */
+  })
+  .on('invoice.generated', async event => {
+    /* ... */
+  });
 
 await webhook.handle({
   body: rawBody,

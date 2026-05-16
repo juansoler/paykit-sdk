@@ -4,7 +4,9 @@ import { PaymentStatus } from '@paykit-sdk/core';
 /**
  * @internal
  */
-export const PaymentStatus$inboundSchema = (status: PaymentStatus) => {
+export const PaymentStatus$inboundSchema = (
+  status: PaymentStatus,
+) => {
   switch (status) {
     case 'pending':
     case 'processing':

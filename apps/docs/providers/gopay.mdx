@@ -26,6 +26,7 @@ npm install @paykit-sdk/gopay
     GOPAY_SANDBOX=true
     GOPAY_WEBHOOK_URL=https://example.com/api/webhook
     ```
+
   </Tab>
   <Tab title="Direct config">
     ```typescript
@@ -42,19 +43,23 @@ npm install @paykit-sdk/gopay
       }),
     );
     ```
+
   </Tab>
 </Tabs>
 
 ## Webhooks
 
 <Warning>
-GoPay sends webhook notifications via GET requests. Your handler must accept GET, not POST.
+  GoPay sends webhook notifications via GET requests. Your handler
+  must accept GET, not POST.
 </Warning>
 
 ```typescript
 const webhook = paykit.webhooks
   .setup({ webhookSecret: '' }) // GoPay does not use a shared secret
-  .on('payment.created', async event => { /* ... */ });
+  .on('payment.created', async event => {
+    /* ... */
+  });
 
 await webhook.handle({
   body: '',

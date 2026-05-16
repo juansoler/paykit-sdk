@@ -138,11 +138,9 @@ export interface UpdatePaymentSchema<
 }
 
 export const updatePaymentSchema = schema<UpdatePaymentSchema>()(
-  paymentSchema
-    .partial()
-    .extend({
-      provider_metadata: z.record(z.string(), z.unknown()).optional(),
-    }),
+  paymentSchema.partial().extend({
+    provider_metadata: z.record(z.string(), z.unknown()).optional(),
+  }),
 );
 
 export interface RetrievePaymentSchema {

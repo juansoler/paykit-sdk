@@ -7,7 +7,10 @@ import {
   omitInternalMetadata,
   Checkout,
 } from '@paykit-sdk/core';
-import { GoPayPaymentBaseResponse, GoPaySubscriptionResponse } from '../schema';
+import {
+  GoPayPaymentBaseResponse,
+  GoPaySubscriptionResponse,
+} from '../schema';
 
 /**
  * Decodes HTML entities that GoPay returns for JSON strings
@@ -29,8 +32,9 @@ export const Payment$inboundSchema = (
 ): Payment => {
   const { item } = JSON.parse(
     decodeHtmlEntities(
-      data.additional_params?.find(param => param.name === PAYKIT_METADATA_KEY)
-        ?.value ?? '{}',
+      data.additional_params?.find(
+        param => param.name === PAYKIT_METADATA_KEY,
+      )?.value ?? '{}',
     ),
   );
 
@@ -59,7 +63,9 @@ export const Payment$inboundSchema = (
   };
 
   const requiresAction =
-    data.state === 'CREATED' || data.state === 'AUTHORIZED' ? true : false;
+    data.state === 'CREATED' || data.state === 'AUTHORIZED'
+      ? true
+      : false;
 
   return {
     id: data.id.toString(),
@@ -84,8 +90,9 @@ export const Checkout$inboundSchema = (
 ): Checkout => {
   const { item, qty, type } = JSON.parse(
     decodeHtmlEntities(
-      data.additional_params?.find(param => param.name === PAYKIT_METADATA_KEY)
-        ?.value ?? '{}',
+      data.additional_params?.find(
+        param => param.name === PAYKIT_METADATA_KEY,
+      )?.value ?? '{}',
     ),
   );
 
@@ -116,7 +123,9 @@ export const Checkout$inboundSchema = (
 /**
  * @internal
  */
-export const Invoice$inboundSchema = <T extends 'payment' | 'subscription'>(
+export const Invoice$inboundSchema = <
+  T extends 'payment' | 'subscription',
+>(
   data: T extends 'payment'
     ? GoPayPaymentBaseResponse
     : GoPaySubscriptionResponse,
@@ -124,8 +133,9 @@ export const Invoice$inboundSchema = <T extends 'payment' | 'subscription'>(
 ): Invoice => {
   const { item, qty } = JSON.parse(
     decodeHtmlEntities(
-      data.additional_params?.find(param => param.name === PAYKIT_METADATA_KEY)
-        ?.value ?? '{}',
+      data.additional_params?.find(
+        param => param.name === PAYKIT_METADATA_KEY,
+      )?.value ?? '{}',
     ),
   );
 
@@ -136,8 +146,8 @@ export const Invoice$inboundSchema = <T extends 'payment' | 'subscription'>(
 
   const paidAt = isSubscription
     ? new Date(
-        (data as GoPaySubscriptionResponse).recurrence?.recurrence_date_to ??
-          '',
+        (data as GoPaySubscriptionResponse).recurrence
+          ?.recurrence_date_to ?? '',
       )
     : new Date();
 
@@ -176,12 +186,16 @@ export const Subscription$inboundSchema = (
 ): Subscription => {
   const { item } = JSON.parse(
     decodeHtmlEntities(
-      data.additional_params?.find(param => param.name === PAYKIT_METADATA_KEY)
-        ?.value ?? '{}',
+      data.additional_params?.find(
+        param => param.name === PAYKIT_METADATA_KEY,
+      )?.value ?? '{}',
     ),
   );
 
-  const billingIntervalMap: Record<string, Subscription['billing_interval']> = {
+  const billingIntervalMap: Record<
+    string,
+    Subscription['billing_interval']
+  > = {
     DAY: 'day',
     WEEK: 'week',
     MONTH: 'month',
@@ -189,12 +203,16 @@ export const Subscription$inboundSchema = (
   };
 
   const billingInterval =
-    billingIntervalMap[data.recurrence?.recurrence_cycle ?? 'ON_DEMAND'];
+    billingIntervalMap[
+      data.recurrence?.recurrence_cycle ?? 'ON_DEMAND'
+    ];
 
   const recurrencePeriod = data.recurrence?.recurrence_period ?? 1;
   const recurrenceCycle = data.recurrence?.recurrence_cycle;
 
-  const currentPeriodEnd = new Date(data.recurrence?.recurrence_date_to ?? '');
+  const currentPeriodEnd = new Date(
+    data.recurrence?.recurrence_date_to ?? '',
+  );
 
   const currentPeriodStart = (() => {
     if (!currentPeriodEnd) return new Date();

@@ -22,7 +22,9 @@ import { Subscription } from '@polar-sh/sdk/models/components/subscription';
 /**
  * @internal
  */
-export const Checkout$inboundSchema = (checkout: Checkout): PaykitCheckout => {
+export const Checkout$inboundSchema = (
+  checkout: Checkout,
+): PaykitCheckout => {
   return {
     id: checkout.id,
     payment_url: checkout.url,
@@ -36,7 +38,9 @@ export const Checkout$inboundSchema = (checkout: Checkout): PaykitCheckout => {
       id: product.id,
       quantity: 1,
     })),
-    metadata: omitInternalMetadata(checkout.metadata as PaykitMetadata) ?? null,
+    metadata:
+      omitInternalMetadata(checkout.metadata as PaykitMetadata) ??
+      null,
     currency: checkout.currency,
     amount: checkout.amount,
   };
@@ -45,10 +49,13 @@ export const Checkout$inboundSchema = (checkout: Checkout): PaykitCheckout => {
 /**
  * @internal
  */
-export const Customer$inboundSchema = (customer: Customer): PaykitCustomer => {
+export const Customer$inboundSchema = (
+  customer: Customer,
+): PaykitCustomer => {
   const phone =
-    JSON.parse((customer.metadata?.[PAYKIT_METADATA_KEY] as string) ?? '{}')
-      .phone ?? '';
+    JSON.parse(
+      (customer.metadata?.[PAYKIT_METADATA_KEY] as string) ?? '{}',
+    ).phone ?? '';
 
   return {
     id: customer.id,
@@ -147,7 +154,9 @@ export const Invoice$inboundSchema = (
 /**
  * @internal
  */
-export const Payment$inboundSchema = (checkout: Checkout): Payment => {
+export const Payment$inboundSchema = (
+  checkout: Checkout,
+): Payment => {
   const statusMap: Record<CheckoutStatus, PaymentStatus> = {
     open: 'pending',
     expired: 'canceled',
@@ -166,8 +175,10 @@ export const Payment$inboundSchema = (checkout: Checkout): Payment => {
         ? { email: checkout.customerEmail }
         : null,
     status: statusMap[checkout.status],
-    metadata: omitInternalMetadata(checkout.metadata as PaykitMetadata) ?? {},
-    item_id: checkout.products.length > 0 ? checkout.products[0].id : null,
+    metadata:
+      omitInternalMetadata(checkout.metadata as PaykitMetadata) ?? {},
+    item_id:
+      checkout.products.length > 0 ? checkout.products[0].id : null,
     requires_action: checkout.status === 'open' ? true : false,
     payment_url: checkout.status === 'open' ? checkout.url : null,
   };
@@ -176,7 +187,9 @@ export const Payment$inboundSchema = (checkout: Checkout): Payment => {
 /**
  * @internal
  */
-export const Refund$inboundSchema = (refund: Refund): PaykitRefund => {
+export const Refund$inboundSchema = (
+  refund: Refund,
+): PaykitRefund => {
   return {
     id: refund.id,
     amount: refund.amount,

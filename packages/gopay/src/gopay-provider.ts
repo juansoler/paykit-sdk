@@ -358,7 +358,9 @@ export class GoPayProvider
       throw new InvalidTypeError(
         'customer',
         'object with email',
-        isIdCustomer(data.customer) ? 'object with id' : typeof data.customer,
+        isIdCustomer(data.customer)
+          ? 'object with id'
+          : typeof data.customer,
         {
           provider: this.providerName,
           method: 'createSubscription',
@@ -643,7 +645,9 @@ export class GoPayProvider
       throw new InvalidTypeError(
         'customer',
         'object with email',
-        isIdCustomer(data.customer) ? 'object with id' : typeof data.customer,
+        isIdCustomer(data.customer)
+          ? 'object with id'
+          : typeof data.customer,
         {
           provider: this.providerName,
           method: 'createPayment',
@@ -679,7 +683,10 @@ export class GoPayProvider
         default_payment_instrument: 'PAYMENT_CARD',
         contact: { email: data.customer.email as string },
       },
-      callback: { return_url: successUrl, notification_url: this.opts.webhookUrl },
+      callback: {
+        return_url: successUrl,
+        notification_url: this.opts.webhookUrl,
+      },
       target: { type: 'ACCOUNT', goid: parseInt(this.opts.goId) },
       amount: data.amount,
       currency: data.currency ?? 'CZK',

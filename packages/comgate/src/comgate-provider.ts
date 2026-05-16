@@ -749,10 +749,7 @@ export class ComgateProvider
 
       succeeded: data => {
         const invoice = Invoice$inboundSchema(data);
-        const payment = Payment$inboundSchema(
-          data,
-          'succeeded',
-        );
+        const payment = Payment$inboundSchema(data, 'succeeded');
 
         return [
           paykitEvent$InboundSchema<Payment>({

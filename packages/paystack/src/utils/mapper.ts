@@ -85,7 +85,9 @@ export const Payment$inboundSchema = (
     id: data.reference,
     amount: data.amount,
     currency: data.currency,
-    customer: data.customer?.email ? { email: data.customer.email } : null,
+    customer: data.customer?.email
+      ? { email: data.customer.email }
+      : null,
     status,
     metadata,
     item_id: itemId,
@@ -200,7 +202,9 @@ export const Subscription$inboundSchema = (
 
   return {
     id: data.subscription_code,
-    customer: data.customer?.email ? { email: data.customer.email } : null,
+    customer: data.customer?.email
+      ? { email: data.customer.email }
+      : null,
     amount: data.amount,
     currency: data.currency || data.plan?.currency || 'NGN',
     status: paystackSubscriptionStatusMap[data.status] ?? 'active',
@@ -246,7 +250,9 @@ export const Invoice$inboundSchema = (
 
   return {
     id: String(data.id),
-    customer: data.customer?.email ? { email: data.customer.email } : null,
+    customer: data.customer?.email
+      ? { email: data.customer.email }
+      : null,
     subscription_id: null,
     billing_mode: 'one_time',
     amount_paid: data.amount,

@@ -127,7 +127,7 @@ pnpm build
 - Use TypeScript strict mode
 - Follow existing code patterns
 - Run `pnpm lint` before committing
-- Format with Prettier: `pnpm format`
+- Format with Prettier: `pnpm fix-prettier`
 
 ## Questions?
 

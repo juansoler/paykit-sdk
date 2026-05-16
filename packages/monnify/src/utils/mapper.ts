@@ -58,7 +58,10 @@ export const monnifyToPaykitEventMap: Record<
 export const Checkout$inboundSchema = (
   data: Record<string, any>,
 ): Checkout => {
-  const metadataObj = (data.metaData || {}) as Record<string, unknown>;
+  const metadataObj = (data.metaData || {}) as Record<
+    string,
+    unknown
+  >;
   const paykitMetadata = metadataObj[PAYKIT_METADATA_KEY];
 
   let parsed = null;
@@ -99,7 +102,10 @@ export const Checkout$inboundSchema = (
 export const Payment$inboundSchema = (
   data: Record<string, any>,
 ): Payment => {
-  const metadataObj = (data.metaData || {}) as Record<string, unknown>;
+  const metadataObj = (data.metaData || {}) as Record<
+    string,
+    unknown
+  >;
   const paykitMetadata = metadataObj[PAYKIT_METADATA_KEY];
 
   let parsed = null;
@@ -124,9 +130,11 @@ export const Payment$inboundSchema = (
     EXPIRED: 'failed',
   };
 
-  const paymentStatus = data.paymentStatus || data.status || 'PENDING';
+  const paymentStatus =
+    data.paymentStatus || data.status || 'PENDING';
   const status = statusMap[paymentStatus] || 'pending';
-  const requiresAction = status === 'pending' || status === 'processing';
+  const requiresAction =
+    status === 'pending' || status === 'processing';
   const email = data?.customerEmail || data?.customer?.email;
 
   return {
@@ -152,7 +160,9 @@ export const Refund$inboundSchema = (
 
   return {
     id:
-      data.transactionReference || data.refundReference || crypto.randomUUID(),
+      data.transactionReference ||
+      data.refundReference ||
+      crypto.randomUUID(),
     amount: data.amountRefunded || data.amount || 0,
     currency: data.currencyCode || data.currency || 'NGN',
     reason: data.refundReason || data.reason || null,

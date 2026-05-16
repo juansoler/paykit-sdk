@@ -32,14 +32,16 @@ export const Checkout$inboundSchema = (
 
   if (typeof checkout.customer === 'string')
     customer = { id: checkout.customer };
-  else if (checkout.customer?.id) customer = { id: checkout.customer.id };
+  else if (checkout.customer?.id)
+    customer = { id: checkout.customer.id };
   else if (checkout.customer_email)
     customer = { email: checkout.customer_email };
 
   return {
     id: checkout.id,
     customer,
-    session_type: checkout.mode === 'subscription' ? 'recurring' : 'one_time',
+    session_type:
+      checkout.mode === 'subscription' ? 'recurring' : 'one_time',
     payment_url: checkout.url!,
     products: lineItems.map(item => ({
       id: item.id,
@@ -55,7 +57,9 @@ export const Checkout$inboundSchema = (
 /**
  * @internal
  */
-export const Customer$inboundSchema = (customer: Stripe.Customer): Customer => {
+export const Customer$inboundSchema = (
+  customer: Stripe.Customer,
+): Customer => {
   return {
     id: customer.id,
     email: customer.email ?? '',
@@ -66,9 +70,11 @@ export const Customer$inboundSchema = (customer: Stripe.Customer): Customer => {
     updated_at: null,
     custom_fields: {
       default_payment_method:
-        typeof customer.invoice_settings?.default_payment_method === 'string'
+        typeof customer.invoice_settings?.default_payment_method ===
+        'string'
           ? customer.invoice_settings.default_payment_method
-          : (customer.invoice_settings?.default_payment_method?.id ?? null),
+          : (customer.invoice_settings?.default_payment_method?.id ??
+            null),
       balance: customer.balance,
       currency: customer.currency ?? null,
       delinquent: customer.delinquent ?? false,
@@ -96,7 +102,8 @@ export const Subscription$inboundSchema = (
     paused: 'past_due',
   };
 
-  const status = subscriptionStatusMap[subscription.status] ?? 'pending';
+  const status =
+    subscriptionStatusMap[subscription.status] ?? 'pending';
 
   const metadata = omitInternalMetadata(subscription.metadata ?? {});
 
@@ -131,7 +138,9 @@ type InvoicePayload = Stripe.Invoice & { billingMode: BillingMode };
 /**
  * @internal
  */
-export const Invoice$inboundSchema = (invoice: InvoicePayload): Invoice => {
+export const Invoice$inboundSchema = (
+  invoice: InvoicePayload,
+): Invoice => {
   const status = ((): InvoiceStatus => {
     if (invoice.status == 'paid') return 'paid';
     if (
@@ -146,7 +155,9 @@ export const Invoice$inboundSchema = (invoice: InvoicePayload): Invoice => {
   const customerId = (() => {
     if (typeof invoice.customer === 'string') return invoice.customer;
     if (invoice.customer?.id) return invoice.customer.id;
-    throw new Error(`Unknown customer ID: ${String(invoice.customer)}`);
+    throw new Error(
+      `Unknown customer ID: ${String(invoice.customer)}`,
+    );
   })();
 
   return {
@@ -160,7 +171,8 @@ export const Invoice$inboundSchema = (invoice: InvoicePayload): Invoice => {
       quantity: line.quantity!,
     })),
     subscription_id:
-      invoice.parent?.subscription_details?.subscription?.toString() ?? null,
+      invoice.parent?.subscription_details?.subscription?.toString() ??
+      null,
     status,
     paid_at: new Date(invoice.created * 1000).toISOString(),
     metadata: omitInternalMetadata(invoice.metadata ?? {}),
@@ -185,7 +197,10 @@ export const Payment$inboundSchema = (
     intent.metadata?.[PAYKIT_METADATA_KEY] ?? '{}',
   ).itemId;
 
-  const statusMap: Record<Stripe.PaymentIntent.Status, PaymentStatus> = {
+  const statusMap: Record<
+    Stripe.PaymentIntent.Status,
+    PaymentStatus
+  > = {
     requires_payment_method: 'pending',
     requires_confirmation: 'pending',
     requires_action: 'requires_action',
@@ -205,7 +220,9 @@ export const Payment$inboundSchema = (
     id: intent.id,
     amount: intent.amount,
     currency: intent.currency,
-    customer: intent.customer ? { id: intent.customer as string } : null,
+    customer: intent.customer
+      ? { id: intent.customer as string }
+      : null,
     status,
     metadata: omitInternalMetadata(intent.metadata ?? {}),
     item_id: itemId,
@@ -217,7 +234,9 @@ export const Payment$inboundSchema = (
 /**
  * @internal
  */
-export const Refund$inboundSchema = (refund: Stripe.Refund): Refund => {
+export const Refund$inboundSchema = (
+  refund: Stripe.Refund,
+): Refund => {
   return {
     id: refund.id,
     amount: refund.amount,

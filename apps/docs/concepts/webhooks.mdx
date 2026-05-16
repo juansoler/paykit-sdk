@@ -35,19 +35,19 @@ await webhook.handle({
 
 ## Standard events
 
-| Event | Data type |
-|---|---|
-| `customer.created` | `Customer` |
-| `customer.updated` | `Customer` |
-| `customer.deleted` | `Customer` |
-| `subscription.created` | `Subscription` |
-| `subscription.updated` | `Subscription` |
+| Event                   | Data type      |
+| ----------------------- | -------------- |
+| `customer.created`      | `Customer`     |
+| `customer.updated`      | `Customer`     |
+| `customer.deleted`      | `Customer`     |
+| `subscription.created`  | `Subscription` |
+| `subscription.updated`  | `Subscription` |
 | `subscription.canceled` | `Subscription` |
-| `payment.created` | `Payment` |
-| `payment.updated` | `Payment` |
-| `payment.canceled` | `Payment` |
-| `refund.created` | `Refund` |
-| `invoice.generated` | `Invoice` |
+| `payment.created`       | `Payment`      |
+| `payment.updated`       | `Payment`      |
+| `payment.canceled`      | `Payment`      |
+| `refund.created`        | `Refund`       |
+| `invoice.generated`     | `Invoice`      |
 
 ## Raw provider events
 
@@ -73,8 +73,8 @@ Standard events and raw events can be mixed freely on the same webhook instance.
 
 ```typescript
 // Web Request (Next.js, Hono, etc.)
-headersAsObject: Object.fromEntries(request.headers)
+headersAsObject: Object.fromEntries(request.headers);
 
 // Express
-headersAsObject: req.headers as Record<string, string>
+headersAsObject: req.headers as Record<string, string>;
 ```

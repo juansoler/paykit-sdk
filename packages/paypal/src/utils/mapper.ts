@@ -48,9 +48,7 @@ export const Refund$inboundSchema = (
 /**
  * @internal
  */
-export const Checkout$inboundSchema = (
-  order: Order,
-): Checkout => {
+export const Checkout$inboundSchema = (order: Order): Checkout => {
   return {
     id: order.id!,
     payment_url:
@@ -77,9 +75,7 @@ export const Checkout$inboundSchema = (
 /**
  * @internal
  */
-export const Payment$inboundSchema = (
-  order: Order,
-): Payment => {
+export const Payment$inboundSchema = (order: Order): Payment => {
   const statusMap: Record<string, Payment['status']> = {
     CREATED: 'pending',
     SAVED: 'pending',
@@ -207,9 +203,7 @@ export const Subscription$inboundSchema = (
 /**
  * @internal
  */
-export const Invoice$inboundSchema = (
-  order: Order,
-): Invoice => {
+export const Invoice$inboundSchema = (order: Order): Invoice => {
   return {
     id: order.id!,
     amount_paid: parseFloat(
