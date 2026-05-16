@@ -58,8 +58,9 @@ const optionsSchema = z.object({
 
   /**
    * The webhook secret for the provider
+   * Adds default because becuase it is not required for all providers
    */
-  webhookSecret: z.string(),
+  webhookSecret: z.string().default(''), //
 
   /**
    * Whether to enable debug mode
@@ -119,9 +120,23 @@ export class PaykitMedusaJSAdapter extends AbstractPaymentProvider<PaykitMedusaJ
   private async exec<T>(
     promise: Promise<T>,
     context: string,
-  ): Promise<T> {
+    options?: { allowUnsupported?: boolean },
+  ): Promise<T | null> {
     const [result, error] = await tryCatchAsync(promise);
+
     if (error) {
+      if (
+        options?.allowUnsupported &&
+        error.name === 'ProviderNotSupportedError'
+      ) {
+        if (this.options.debug) {
+          console.warn(
+            `[PayKit ${context}] Operation not supported by ${this.paykit.providerName}.`,
+          );
+        }
+        return null;
+      }
+
       throw new MedusaError(
         MedusaError.Types.PAYMENT_AUTHORIZATION_ERROR,
         `[PayKit ${context}] ${error.message}`,
@@ -146,20 +161,31 @@ export class PaykitMedusaJSAdapter extends AbstractPaymentProvider<PaykitMedusaJ
       });
     }
 
-    let customer: Payee = context?.account_holder?.data?.id
-      ? { id: context.account_holder.data.id as string }
-      : { email: data?.email as string };
+    const hasProviderCustomer = !!context?.account_holder?.data?.id;
 
-    if (!isIdCustomer(customer) && !isEmailCustomer(customer)) {
+    let customer: Payee | null = null;
+
+    if (context?.account_holder?.data?.id) {
+      customer = { id: context.account_holder.data.id as string };
+    } else if (context?.customer?.email) {
+      customer = { email: context.customer.email as string };
+    } else if (data?.email) {
+      customer = { email: data.email as string };
+    }
+
+    if (
+      !customer ||
+      (!isIdCustomer(customer) && !isEmailCustomer(customer))
+    ) {
       throw new MedusaError(
         MedusaError.Types.INVALID_DATA,
-        'Customer ID (account_holder) or Email (data) required',
+        'Customer ID (account_holder) or Email (context.customer or data.email) required',
       );
     }
 
-    if (isEmailCustomer(customer) && !isIdCustomer(customer)) {
+    if (!hasProviderCustomer && isEmailCustomer(customer)) {
       const { fullName } = parseCustomerName({
-        name: data?.name as string,
+        name: `${context?.customer?.first_name ?? ''} ${context?.customer?.last_name ?? ''}`.trim(),
         email: customer.email,
       });
 
@@ -185,13 +211,16 @@ export class PaykitMedusaJSAdapter extends AbstractPaymentProvider<PaykitMedusaJ
           },
         }),
         'Customer Creation',
+        { allowUnsupported: true },
       ).catch(e => {
         // Fallback if provider doesn't support customer objects
         return { email: (customer as { email: string }).email };
       });
       customer = {
-        ...('id' in created ? { id: created.id } : {}),
-        ...('email' in created ? { email: created.email } : {}),
+        ...(created && 'id' in created ? { id: created.id } : {}),
+        ...(created && 'email' in created
+          ? { email: created.email }
+          : {}),
       } as Payee;
     }
 
@@ -212,11 +241,11 @@ export class PaykitMedusaJSAdapter extends AbstractPaymentProvider<PaykitMedusaJ
     );
 
     return {
-      id: payment.id,
-      status: payment.requires_action
+      id: payment!.id,
+      status: payment!.requires_action
         ? PaymentSessionStatus.REQUIRES_MORE
-        : PaymentStatus$inboundSchema(payment.status),
-      data: { ...payment, payment_url: payment.payment_url },
+        : PaymentStatus$inboundSchema(payment!.status),
+      data: { ...payment!, payment_url: payment!.payment_url },
     };
   };
 
@@ -466,8 +495,6 @@ export class PaykitMedusaJSAdapter extends AbstractPaymentProvider<PaykitMedusaJ
     return result;
   };
 
-  // --- ACCOUNT HOLDERS (Simplified) ---
-
   createAccountHolder = async ({
     context,
     data,
@@ -501,7 +528,12 @@ export class PaykitMedusaJSAdapter extends AbstractPaymentProvider<PaykitMedusaJ
         billing: billingInfo.data ?? null,
       }),
       'Create Account Holder',
+      { allowUnsupported: true },
     );
+
+    // @ts-expect-error
+    if (!res) return {};
+
     return {
       id: res.id,
       data: res as unknown as Record<string, unknown>,
