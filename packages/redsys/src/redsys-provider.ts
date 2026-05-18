@@ -8,6 +8,7 @@ import {
   CreateRefundSchema,
   CreateSubscriptionSchema,
   Customer,
+  HTTPClient,
   InvalidTypeError,
   NotImplementedError,
   OperationFailedError,
@@ -133,10 +134,16 @@ export class RedsysProvider
   implements PayKitProvider<RedsysMetadata, never, RedsysRawEvents>
 {
   private readonly opts: RedsysOptions;
+  private readonly _client: HTTPClient;
 
   constructor(opts: RedsysOptions) {
     super(RedsysOptionsSchema, opts, PROVIDER_NAME);
     this.opts = opts;
+    this._client = new HTTPClient({
+      baseUrl: this._getRedsysUrl(),
+      headers: { 'Content-Type': 'application/json' },
+      retryOptions: { max: 3, baseDelay: 1000, debug: false },
+    });
   }
 
   readonly providerName = PROVIDER_NAME;
@@ -350,28 +357,28 @@ export class RedsysProvider
       DS_MERCHANT_IDOPERACION: operationId,
     };
 
-    // Sign the REST request
     const base64Params = Buffer.from(JSON.stringify(params)).toString('base64');
     const signature = this._sign(orderId, base64Params);
 
-    const response = await fetch(this._getRedsysUrl(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        Ds_SignatureVersion: 'HMAC_SHA256_V1',
-        Ds_MerchantParameters: base64Params,
-        Ds_Signature: signature,
-      }),
-    });
+    const { ok, data: result } = await this._client.post<Record<string, unknown>>(
+      '/',
+      {
+        body: JSON.stringify({
+          Ds_SignatureVersion: 'HMAC_SHA256_V1',
+          Ds_MerchantParameters: base64Params,
+          Ds_Signature: signature,
+        }),
+      },
+    );
 
-    if (!response.ok) {
+    if (!ok || !result) {
       throw new OperationFailedError(
-        `Redsys REST API error: ${response.status} ${response.statusText}`,
+        'Redsys REST API error: request failed',
         this.providerName,
       );
     }
 
-    return await response.json();
+    return result;
   }
 
   retrievePayment = async (id: string): Promise<Payment | null> => {
@@ -547,17 +554,25 @@ export class RedsysProvider
     const base64Params = Buffer.from(JSON.stringify(params)).toString('base64');
     const signature = this._sign(orderId, base64Params);
 
-    const response = await fetch(this._getRedsysUrl(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        Ds_SignatureVersion: 'HMAC_SHA256_V1',
-        Ds_MerchantParameters: base64Params,
-        Ds_Signature: signature,
-      }),
-    });
+    const { ok, data: result } = await this._client.post<Record<string, unknown>>(
+      '/',
+      {
+        body: JSON.stringify({
+          Ds_SignatureVersion: 'HMAC_SHA256_V1',
+          Ds_MerchantParameters: base64Params,
+          Ds_Signature: signature,
+        }),
+      },
+    );
 
-    return await response.json();
+    if (!ok || !result) {
+      throw new OperationFailedError(
+        'Redsys REST API error: refund failed',
+        this.providerName,
+      );
+    }
+
+    return result;
   }
 
   /**
@@ -613,24 +628,59 @@ export class RedsysProvider
         }
       }
 
-      events.push({
-        event: 'redsys.payment.succeeded' as any,
-        data: {
-          order_id: dsOrder,
-          amount: Number(dsAmount) / 100,
-          response_code: dsResponse,
-          customer_id: customerId,
+      const amountNum = Number(dsAmount) / 100;
+      const paymentId = `${dsOrder}_${params.Ds_AuthorisationCode ?? 'unknown'}`;
+
+      events.push(
+        {
+          event: 'redsys.payment.succeeded' as any,
+          data: {
+            order_id: dsOrder,
+            amount: amountNum,
+            response_code: dsResponse,
+            customer_id: customerId,
+          },
         },
-      });
+        {
+          event: 'payment.succeeded' as any,
+          data: {
+            id: paymentId,
+            amount: amountNum,
+            currency: 'EUR',
+            customer: customerId ? { id: customerId } : null,
+            status: 'succeeded' as const,
+            metadata: {},
+            item_id: null,
+            requires_action: false,
+            payment_url: null,
+          },
+        },
+      );
     } else {
-      events.push({
-        event: 'redsys.payment.failed' as any,
-        data: {
-          order_id: dsOrder,
-          response_code: dsResponse,
-          error_message: RESPONSE_CODES[dsResponse] ?? `Code ${dsResponse}`,
+      events.push(
+        {
+          event: 'redsys.payment.failed' as any,
+          data: {
+            order_id: dsOrder,
+            response_code: dsResponse,
+            error_message: RESPONSE_CODES[dsResponse] ?? `Code ${dsResponse}`,
+          },
         },
-      });
+        {
+          event: 'payment.failed' as any,
+          data: {
+            id: dsOrder,
+            amount: Number(dsAmount) / 100,
+            currency: 'EUR',
+            customer: null,
+            status: 'failed' as const,
+            metadata: {},
+            item_id: null,
+            requires_action: false,
+            payment_url: null,
+          },
+        },
+      );
     }
 
     return events;
